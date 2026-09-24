@@ -11,6 +11,9 @@ dist/
 # Virtual environments
 .venv/
 
+# Logs
+bot.log*
+
 # Tool caches
 .pytest_cache/
 .ruff_cache/

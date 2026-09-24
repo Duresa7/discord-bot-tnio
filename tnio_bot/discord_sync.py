@@ -16,10 +16,11 @@ from typing import Protocol
 import discord
 
 from tnio_bot.hosts import MemberInfo
-from tnio_bot.schedule import WeekMessages, post_time
+from tnio_bot.schedule import WeekMessages
 
-# Search for the week's messages from this long before its post time.
-SEARCH_MARGIN = timedelta(hours=1)
+# A week can be posted at the earliest one week before it starts (the post time
+# is a setting). Search from there, so a changed post time never causes a repost.
+SEARCH_WINDOW = timedelta(days=7, hours=1)
 
 
 @dataclass(frozen=True)
@@ -44,7 +45,7 @@ async def sync_week(
     channel: Channel, start: datetime, week: WeekMessages, ping_everyone: bool
 ) -> str:
     """Make the channel show ``week``. Return a short description of what changed."""
-    posted = await channel.bot_messages_after(post_time(start) - SEARCH_MARGIN)
+    posted = await channel.bot_messages_after(start - SEARCH_WINDOW)
     found = [_find(posted, marker) for marker in week.markers]
 
     if all(found):

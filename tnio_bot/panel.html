@@ -3,203 +3,305 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Schedule Bot Panel</title>
+<title>TNIO Schedule Bot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #1e1f22; --card: #2b2d31; --field: #1e1f22; --line: #3f4147;
-    --text: #dbdee1; --muted: #949ba4; --accent: #5865f2; --accent-hover: #4752c4;
-    --green: #23a55a; --red: #f23f43; --yellow: #f0b232;
-    --mention-bg: rgba(88, 101, 242, .3); --mention-text: #c9cdfb;
-    --chat: #313338;
+    --page: #23272e; --panel: #2b3038; --raised: #363c46; --line: #4a525e;
+    --text: #e6e8eb; --muted: #9aa3ae;
+    --crimson: #a3223a; --crimson-hover: #b92c46;
+    --green: #45a871; --amber: #d9a441;
+    --chat: #313338; --mention-bg: rgba(88, 101, 242, .3); --mention-text: #c9cdfb;
+    --display: "Saira Semi Condensed", "Segoe UI", system-ui, sans-serif;
+    --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text);
-         font: 15px/1.45 "gg sans", "Segoe UI", system-ui, sans-serif; }
-  header { display: flex; align-items: center; gap: 12px; padding: 16px 24px;
-           border-bottom: 1px solid var(--line); background: var(--card); }
-  header h1 { font-size: 18px; margin: 0; flex: 1; }
-  main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px;
-         display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  @media (max-width: 760px) { main { grid-template-columns: 1fr; } }
-  .card { background: var(--card); border-radius: 10px; padding: 18px; min-width: 0; }
-  .card h2 { font-size: 13px; letter-spacing: .04em; text-transform: uppercase;
-             color: var(--muted); margin: 0 0 12px; }
-  .wide { grid-column: 1 / -1; }
-  .badge { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 99px; }
-  .badge.test { background: #3b3d44; color: var(--text); }
-  .badge.real { background: var(--red); color: #fff; }
-  .banner { grid-column: 1 / -1; background: rgba(240, 178, 50, .15); border: 1px solid var(--yellow);
-            border-radius: 10px; padding: 12px 16px; display: flex; gap: 12px; align-items: center; }
-  .banner[hidden] { display: none; }
-  .banner span { flex: 1; }
-  button { font: inherit; font-weight: 600; border: 0; border-radius: 6px; padding: 8px 14px;
-           background: var(--accent); color: #fff; cursor: pointer; }
-  button:hover { background: var(--accent-hover); }
-  button.secondary { background: #4e5058; }
-  button.secondary:hover { background: #6d6f78; }
-  button.danger { background: transparent; color: var(--red); padding: 6px 8px; }
-  button:disabled { opacity: .5; cursor: wait; }
-  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-  .muted { color: var(--muted); font-size: 13px; }
-  .ok { color: var(--green); } .bad { color: var(--red); }
-  .error-box { background: rgba(242, 63, 67, .12); border-left: 3px solid var(--red);
-               padding: 8px 10px; border-radius: 4px; margin: 8px 0; }
-  label { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase;
-          color: var(--muted); margin: 10px 0 4px; }
-  input[type=text], input[type=password] { width: 100%; padding: 9px 10px; border-radius: 6px;
-          border: 1px solid transparent; background: var(--field); color: var(--text); font: inherit; }
-  input:focus { outline: none; border-color: var(--accent); }
-  .check { display: flex; gap: 8px; align-items: center; margin-top: 10px; font-size: 14px;
-           text-transform: none; color: var(--text); font-weight: 500; }
-  .switch { display: inline-flex; background: var(--field); border-radius: 8px; padding: 3px; }
-  .switch button { background: transparent; color: var(--muted); padding: 6px 16px; }
-  .switch button.on { background: var(--accent); color: #fff; }
-  .switch button.on.real { background: var(--red); }
-  .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  @media (max-width: 560px) { .columns { grid-template-columns: 1fr; } }
-  table { width: 100%; border-collapse: collapse; }
-  td, th { padding: 4px; text-align: left; }
-  th { font-size: 12px; color: var(--muted); text-transform: uppercase; }
-  .toggle { display: flex; align-items: center; gap: 10px; }
-  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
-  .dot.on { background: var(--green); }
-  pre { white-space: pre-wrap; background: var(--field); padding: 10px; border-radius: 6px;
-        font-size: 12px; max-height: 240px; overflow: auto; }
-  /* Discord-like preview */
-  .chat { background: var(--chat); border-radius: 8px; padding: 12px 16px; }
-  .week-title { color: var(--muted); font-size: 12px; font-weight: 700; text-align: center;
-                margin: 14px 0 6px; text-transform: uppercase; }
-  .msg { display: flex; gap: 14px; padding: 8px 0; }
-  .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--accent); flex: none;
-            display: grid; place-items: center; font-weight: 700; color: #fff; }
-  .msg-body { min-width: 0; flex: 1; }
+  body { margin: 0; background: var(--page); color: var(--text); font: 16px/1.5 var(--body); }
+  h1, h2, h3 { font-family: var(--display); font-weight: 600; margin: 0; letter-spacing: .01em; }
+  button, input, select { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  code { background: var(--raised); padding: 0 4px; border-radius: 4px; font-size: .92em; }
+  [hidden] { display: none !important; }
+
+  /* ---- Top bar ---- */
+  .bar { display: flex; align-items: center; gap: 12px; padding: 12px 24px;
+         border-top: 4px solid var(--crimson); background: var(--panel); border-bottom: 1px solid var(--line); }
+  .bar h1 { font-size: 20px; flex: 1; }
+  .server-badge { font-family: var(--display); font-weight: 600; font-size: 14px; padding: 3px 12px;
+                  border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
+  .server-badge.real { border-color: var(--crimson); color: #fff; background: var(--crimson); }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 24px 64px; }
+
+  /* ---- Status band (the one bold element) ---- */
+  .status { display: grid; grid-template-columns: 1fr auto; gap: 16px 32px; align-items: center;
+            background: var(--panel); border-left: 8px solid var(--muted); padding: 24px 28px; }
+  .status.running { border-left-color: var(--green); }
+  .status.paused { border-left-color: var(--amber); }
+  .status.failed { border-left-color: var(--crimson); }
+  .status h2 { font-size: clamp(30px, 4.4vw, 46px); line-height: 1.05; font-weight: 700; }
+  .status .detail { color: var(--muted); margin-top: 8px; max-width: 70ch; }
+  .status .next { margin-top: 14px; font-size: 17px; }
+  .status .next b { font-family: var(--display); font-weight: 600; font-size: 19px; }
+  .status .next a { color: var(--muted); margin-left: 8px; font-size: 15px; }
+  .controls { display: flex; flex-direction: column; align-items: flex-end; gap: 14px; }
+  .switch-row { display: flex; align-items: center; gap: 12px; font-family: var(--display); font-weight: 600; font-size: 17px; }
+  .switch { width: 56px; height: 30px; border-radius: 99px; border: 0; padding: 3px; cursor: pointer;
+            background: var(--line); position: relative; flex: none; }
+  .switch::after { content: ""; display: block; width: 24px; height: 24px; border-radius: 50%; background: #fff;
+                   transition: transform .18s ease; }
+  .switch[aria-checked="true"] { background: var(--green); }
+  .switch[aria-checked="true"]::after { transform: translateX(26px); }
+  .switch:disabled { opacity: .45; cursor: not-allowed; }
+  .error-box { grid-column: 1 / -1; background: rgba(163, 34, 58, .18); border-left: 3px solid var(--crimson);
+               padding: 10px 14px; }
+  .warn-box { grid-column: 1 / -1; background: rgba(217, 164, 65, .14); border-left: 3px solid var(--amber);
+              padding: 10px 14px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .warn-box span { flex: 1; min-width: 200px; }
+
+  /* ---- Buttons and fields ---- */
+  .btn { border: 0; border-radius: 6px; padding: 9px 18px; cursor: pointer; font-weight: 600;
+         background: var(--crimson); color: #fff; }
+  .btn:hover { background: var(--crimson-hover); }
+  .btn.quiet { background: var(--raised); color: var(--text); border: 1px solid var(--line); }
+  .btn.quiet:hover { background: var(--line); }
+  .btn.big { padding: 12px 26px; font-size: 17px; }
+  .btn:disabled { opacity: .5; cursor: wait; }
+  .link-btn { background: none; border: 0; color: var(--muted); cursor: pointer; padding: 4px 6px; }
+  .link-btn:hover { color: var(--text); }
+  label { display: block; font-weight: 600; margin: 16px 0 6px; }
+  .hint { color: var(--muted); font-size: 14px; margin: 6px 0 0; }
+  input[type=text], input[type=password], input[type=time], select {
+    width: 100%; padding: 9px 11px; border-radius: 6px; border: 1px solid var(--line); background: var(--page); }
+  input:focus, select:focus { border-color: var(--amber); outline: none; }
+  .check { display: flex; gap: 10px; align-items: center; font-weight: 400; margin-top: 14px; }
+  .check input { width: 18px; height: 18px; accent-color: var(--crimson); }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .pair { display: grid; grid-template-columns: 1.3fr 1fr; gap: 10px; }
+
+  /* ---- Main area ---- */
+  .main { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 24px; margin-top: 24px;
+          align-items: start; }
+  .section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .section-head h2 { font-size: 24px; }
+
+  /* Preview, drawn like Discord */
+  .chat { background: var(--chat); border-radius: 8px; padding: 8px 18px 14px; border: 1px solid #25272b; }
+  .week-title { color: var(--muted); font-size: 13px; text-align: center; margin: 14px 0 4px;
+                display: flex; align-items: center; gap: 12px; }
+  .week-title::before, .week-title::after { content: ""; flex: 1; border-top: 1px solid #3f4147; }
+  .msg { display: flex; gap: 14px; padding: 10px 0; }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--crimson); flex: none;
+            display: grid; place-items: center; }
+  .msg-body { min-width: 0; flex: 1; font-family: "gg sans", "Segoe UI", system-ui, sans-serif; font-size: 15px; line-height: 1.375; }
   .msg-head { font-weight: 600; color: #fff; }
-  .msg-head .tag { background: var(--accent); font-size: 10px; padding: 1px 4px; border-radius: 3px;
-                   margin-left: 4px; vertical-align: 2px; }
+  .msg-head .tag { background: #5865f2; font-size: 10px; padding: 1px 4px; border-radius: 3px; margin-left: 4px; vertical-align: 2px; }
   .msg-head .count { color: var(--muted); font-size: 12px; font-weight: 400; margin-left: 6px; }
   .msg-body ul { margin: 2px 0; padding-left: 22px; }
-  .gap { height: 10px; }
-  .mention { background: var(--mention-bg); color: var(--mention-text); border-radius: 3px;
-             padding: 0 2px; font-weight: 500; }
-  .emoji { width: 20px; height: 20px; vertical-align: -4px; }
-  #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 10px 18px;
-           border-radius: 8px; background: var(--green); color: #fff; font-weight: 600;
-           max-width: 90vw; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
-  #toast.bad { background: var(--red); }
-  #toast[hidden] { display: none; }
+  .gap { height: 8px; }
+  .mention { background: var(--mention-bg); color: var(--mention-text); border-radius: 3px; padding: 0 2px; font-weight: 500; }
+  .emoji { width: 22px; height: 22px; vertical-align: -5px; }
+  .empty { color: var(--muted); padding: 18px 0; }
+
+  /* Settings with tabs */
+  .settings { background: var(--panel); border-radius: 8px; border: 1px solid var(--line); }
+  .tabs { display: flex; border-bottom: 1px solid var(--line); overflow-x: auto; }
+  .tab { flex: 1; background: none; border: 0; border-bottom: 3px solid transparent; padding: 12px 10px; cursor: pointer;
+         font-family: var(--display); font-weight: 600; font-size: 16px; color: var(--muted); white-space: nowrap; }
+  .tab:hover { color: var(--text); }
+  .tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--crimson); }
+  .tabpanel { padding: 6px 22px 22px; }
+  .tabpanel h3 { font-size: 18px; margin-top: 18px; }
+  .tabpanel hr { border: 0; border-top: 1px solid var(--line); margin: 22px 0 4px; }
+  .segmented { display: inline-flex; background: var(--page); border: 1px solid var(--line); border-radius: 8px; padding: 3px; margin-top: 8px; }
+  .segmented button { border: 0; background: none; padding: 7px 18px; border-radius: 6px; cursor: pointer; color: var(--muted); font-weight: 600; }
+  .segmented button[aria-pressed="true"] { background: var(--raised); color: var(--text); }
+  .segmented button[aria-pressed="true"].real { background: var(--crimson); color: #fff; }
+  .server-fields { border-left: 3px solid var(--line); padding-left: 14px; margin-top: 18px; }
+  .server-fields.active { border-left-color: var(--green); }
+  .server-fields h3 { margin-top: 0; }
+  .hosts-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  .hosts-table th { text-align: left; font-weight: 600; color: var(--muted); font-size: 14px; padding: 0 4px 6px; }
+  .hosts-table td { padding: 4px; }
+  .remove { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 18px; padding: 4px 8px; }
+  .remove:hover { color: var(--crimson-hover); }
+  pre { white-space: pre-wrap; background: var(--page); padding: 12px; border-radius: 6px; font-size: 13px; max-height: 260px; overflow: auto; }
+
+  #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 11px 20px; border-radius: 8px;
+           background: var(--green); color: #fff; font-weight: 600; max-width: 90vw; z-index: 10; }
+  #toast.bad { background: var(--crimson); }
+
+  @media (max-width: 960px) {
+    .main { grid-template-columns: 1fr; }
+    .status { grid-template-columns: 1fr; }
+    .controls { align-items: flex-start; }
+  }
+  @media (max-width: 560px) {
+    .bar, .wrap { padding-left: 16px; padding-right: 16px; }
+    .status { padding: 20px 18px; }
+    .pair { grid-template-columns: 1fr; }
+    .tabpanel { padding: 4px 16px 18px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .switch::after { transition: none; } }
 </style>
 </head>
 <body>
-<header>
-  <h1>📅 Schedule Bot — Control Panel</h1>
-  <span id="server-badge" class="badge test">TEST SERVER</span>
+<header class="bar">
+  <h1>TNIO Schedule Bot</h1>
+  <span id="server-badge" class="server-badge">Test server</span>
 </header>
 
-<main>
-  <div id="google-banner" class="banner" hidden>
-    <span id="google-text"></span>
-    <button id="signin-btn">Sign in to Google</button>
-  </div>
-
-  <section class="card">
-    <h2>Status</h2>
-    <div id="status-text" class="muted">Loading…</div>
-    <div id="status-results"></div>
+<div class="wrap">
+  <!-- Status: is it working, what happens next -->
+  <section id="status" class="status" aria-live="polite">
+    <div>
+      <h2 id="status-title">Loading…</h2>
+      <p id="status-detail" class="detail"></p>
+      <p class="next">Next weekly post: <b id="next-post">…</b>
+        <a href="#posting" id="change-post">Change</a></p>
+    </div>
+    <div class="controls">
+      <div class="switch-row">
+        <span id="switch-label">Automatic run</span>
+        <button id="auto-switch" class="switch" role="switch" aria-checked="false" aria-labelledby="switch-label"></button>
+      </div>
+      <button id="sync-btn" class="btn big">Sync now</button>
+    </div>
     <div id="status-error" class="error-box" hidden></div>
-  </section>
-
-  <section class="card">
-    <h2>Automatic run</h2>
-    <div class="toggle">
-      <span id="schedule-dot" class="dot"></span>
-      <span id="schedule-text">…</span>
-    </div>
-    <p class="muted">When it is on, Windows runs the bot every 5 minutes and 1 minute after each sign-in.
-      It stays on after a restart, and it works when this panel is closed. Turn it off here at any time.</p>
-    <div class="row">
-      <button id="schedule-btn" class="secondary">Turn on</button>
-      <button id="sync-btn">Sync now</button>
+    <div id="google-banner" class="warn-box" hidden>
+      <span id="google-text"></span>
+      <button id="signin-btn" class="btn">Sign in to Google</button>
     </div>
   </section>
 
-  <section class="card wide">
-    <div class="row" style="justify-content: space-between">
-      <h2 style="margin: 0">Preview</h2>
-      <button id="preview-btn" class="secondary">Refresh preview</button>
-    </div>
-    <p class="muted">This is how the messages will look in Discord. Nothing is posted.</p>
-    <div id="preview" class="chat"><span class="muted">Loading…</span></div>
-  </section>
-
-  <section class="card wide">
-    <h2>Discord server</h2>
-    <div class="row">
-      <span class="muted">The bot posts to:</span>
-      <div class="switch" role="group" aria-label="Server">
-        <button data-server="test">Test server</button>
-        <button data-server="real">Real server</button>
+  <div class="main">
+    <!-- Preview -->
+    <section aria-labelledby="preview-title">
+      <div class="section-head">
+        <h2 id="preview-title">Preview</h2>
+        <button id="preview-btn" class="btn quiet">Refresh preview</button>
       </div>
-    </div>
-    <div class="columns">
-      <div data-fields="test">
-        <label>Test channel ID</label><input type="text" data-key="channel_id" inputmode="numeric">
-        <label>Test emoji (optional)</label><input type="text" data-key="emoji" placeholder="<:tnio:123456789012345678>">
-        <label class="check"><input type="checkbox" data-key="ping_everyone"> Ping @everyone on each new week</label>
+      <div id="preview" class="chat"><p class="empty">Reading the calendar…</p></div>
+      <p class="hint">This is how the messages look in Discord. The preview posts nothing.</p>
+    </section>
+
+    <!-- Settings -->
+    <section class="settings" aria-label="Settings">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" id="tab-posting" aria-controls="posting" aria-selected="true">Posting</button>
+        <button class="tab" role="tab" id="tab-hosts" aria-controls="hosts" aria-selected="false">Hosts</button>
+        <button class="tab" role="tab" id="tab-connections" aria-controls="connections" aria-selected="false">Connections</button>
+        <button class="tab" role="tab" id="tab-update" aria-controls="update" aria-selected="false">Update</button>
       </div>
-      <div data-fields="real">
-        <label>Real channel ID</label><input type="text" data-key="channel_id" inputmode="numeric">
-        <label>Real emoji (optional)</label><input type="text" data-key="emoji" placeholder="<:tnio:123456789012345678>">
-        <label class="check"><input type="checkbox" data-key="ping_everyone"> Ping @everyone on each new week</label>
+
+      <!-- Posting -->
+      <div class="tabpanel" role="tabpanel" id="posting" aria-labelledby="tab-posting">
+        <h3>Weekly post</h3>
+        <p class="hint">When the bot posts the next week's schedule. Eastern time.</p>
+        <div class="pair">
+          <div><label for="post-day">Day</label>
+            <select id="post-day">
+              <option value="monday">Monday</option><option value="tuesday">Tuesday</option>
+              <option value="wednesday">Wednesday</option><option value="thursday">Thursday</option>
+              <option value="friday">Friday</option><option value="saturday">Saturday</option>
+              <option value="sunday">Sunday</option>
+            </select></div>
+          <div><label for="post-time">Time</label><input id="post-time" type="time"></div>
+        </div>
+
+        <hr>
+        <h3>Discord server</h3>
+        <p class="hint">The bot posts to one server at a time.</p>
+        <div class="segmented" role="group" aria-label="Server">
+          <button data-server="test" aria-pressed="true">Test server</button>
+          <button data-server="real" aria-pressed="false">Real server</button>
+        </div>
+
+        <div class="server-fields" data-fields="test">
+          <h3>Test server</h3>
+          <label for="test-channel">Channel ID</label>
+          <input id="test-channel" type="text" data-key="channel_id" inputmode="numeric">
+          <label for="test-emoji">Emoji (optional)</label>
+          <input id="test-emoji" type="text" data-key="emoji" placeholder="<:name:123456789012345678>">
+          <label class="check"><input type="checkbox" data-key="ping_everyone"> Put @everyone in each new week's messages</label>
+        </div>
+        <div class="server-fields" data-fields="real">
+          <h3>Real server</h3>
+          <label for="real-channel">Channel ID</label>
+          <input id="real-channel" type="text" data-key="channel_id" inputmode="numeric">
+          <label for="real-emoji">Emoji (optional)</label>
+          <input id="real-emoji" type="text" data-key="emoji" placeholder="<:name:123456789012345678>">
+          <label class="check"><input type="checkbox" data-key="ping_everyone"> Put @everyone in each new week's messages</label>
+        </div>
+        <p class="hint">Channel ID: in Discord, right-click the channel and click “Copy Channel ID” (Developer Mode must be on).
+          Emoji code: type <code>\:name:</code> in Discord and copy the result.</p>
+        <div class="row" style="margin-top: 18px"><button id="posting-save" class="btn">Save posting settings</button></div>
       </div>
-    </div>
-    <p class="muted">Channel ID: in Discord, turn on Developer Mode, right-click the channel, click “Copy Channel ID”.
-      Emoji code: type <code>\:emojiname:</code> in Discord and copy the result.</p>
-    <button id="servers-save">Save server settings</button>
-  </section>
 
-  <section class="card wide">
-    <h2>Hosts</h2>
-    <p class="muted">You usually do not need this list. When an event title contains a Discord name, for example
-      <code>Intel Training - @ravenblack18102</code>, the bot finds that member by itself and shows a blue @mention.
-      Add a row here only for a name that the bot cannot find (for example a typo that people often use).
-      User ID: Developer Mode → right-click the user → “Copy User ID”.</p>
-    <table>
-      <thead><tr><th>Name in the calendar</th><th>Discord user ID</th><th></th></tr></thead>
-      <tbody id="hosts-body"></tbody>
-    </table>
-    <div class="row" style="margin-top: 10px">
-      <button id="host-add" class="secondary">+ Add host</button>
-      <button id="hosts-save">Save hosts</button>
-    </div>
-  </section>
+      <!-- Hosts -->
+      <div class="tabpanel" role="tabpanel" id="hosts" aria-labelledby="tab-hosts" hidden>
+        <h3>Host names</h3>
+        <p class="hint">Usually you need nothing here. When an event title contains a Discord name, for example
+          <code>Intel Training - @ravenblack18102</code>, the bot finds that member and shows a blue mention.
+          Add a name here only if the bot cannot find it.</p>
+        <table class="hosts-table">
+          <thead><tr><th>Name in the calendar</th><th>Discord user ID</th><th><span hidden>Remove</span></th></tr></thead>
+          <tbody id="hosts-body"></tbody>
+        </table>
+        <div class="row" style="margin-top: 12px">
+          <button id="host-add" class="btn quiet">Add a host</button>
+          <button id="hosts-save" class="btn">Save hosts</button>
+        </div>
 
-  <section class="card">
-    <h2>Settings</h2>
-    <label for="token">Discord bot token</label>
-    <input id="token" type="password" autocomplete="off">
-    <label for="calendar">Google Calendar ID</label>
-    <input id="calendar" type="text">
-    <p class="muted">Google Calendar → Settings → (the calendar) → Integrate calendar → Calendar ID.</p>
-    <label for="contact">Contact person (a name from the host list)</label>
-    <input id="contact" type="text" placeholder="Rakkos">
-    <p class="muted">Shown at the end: “Please message @name if there are any questions or changes.” Empty = no contact line.</p>
-    <button id="settings-save">Save settings</button>
-  </section>
+        <hr>
+        <h3>Contact person</h3>
+        <p class="hint">Shown at the end of the schedule: “Please message @name if there are any questions or changes.”</p>
+        <label for="contact">Contact</label>
+        <select id="contact"></select>
+        <div class="row" style="margin-top: 14px"><button id="contact-save" class="btn">Save contact</button></div>
+      </div>
 
-  <section class="card">
-    <h2>Update</h2>
-    <p class="muted">Get the newest version of the bot from GitHub.</p>
-    <button id="update-btn" class="secondary">Update the bot</button>
-    <pre id="update-output" hidden></pre>
-  </section>
-</main>
+      <!-- Connections -->
+      <div class="tabpanel" role="tabpanel" id="connections" aria-labelledby="tab-connections" hidden>
+        <h3>Discord</h3>
+        <label for="token">Bot token</label>
+        <input id="token" type="password" autocomplete="off">
+        <p class="hint">The token never shows here. Type a new one only to replace it.</p>
 
-<div id="toast" hidden></div>
+        <hr>
+        <h3>Google Calendar</h3>
+        <label for="calendar">Calendar ID</label>
+        <input id="calendar" type="text">
+        <p class="hint">Google Calendar → Settings → the shared calendar → Integrate calendar → Calendar ID.</p>
+        <div class="row" style="margin-top: 16px">
+          <button id="connections-save" class="btn">Save connections</button>
+          <button id="signin-btn-2" class="btn quiet">Sign in to Google</button>
+        </div>
+      </div>
+
+      <!-- Update -->
+      <div class="tabpanel" role="tabpanel" id="update" aria-labelledby="tab-update" hidden>
+        <h3>Get the newest version</h3>
+        <p class="hint">Downloads the newest version of the bot from GitHub. After the update, close the black window
+          and open “Start Control Panel.bat” again.</p>
+        <div class="row" style="margin-top: 16px"><button id="update-btn" class="btn quiet">Update the bot</button></div>
+        <pre id="update-output" hidden></pre>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div id="toast" role="status" hidden></div>
 
 <script>
 const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => [...document.querySelectorAll(selector)];
 let state = null;
 let hosts = [];
+
+// ---- Helpers ----
 
 async function api(path, body) {
   const options = body === undefined ? {} : {
@@ -226,7 +328,7 @@ async function busy(button, work) {
 }
 
 function escapeHtml(text) {
-  return text.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  return String(text).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 }
 
 function timeAgo(iso) {
@@ -238,61 +340,103 @@ function timeAgo(iso) {
   return new Date(iso).toLocaleString();
 }
 
+const focused = (element) => element === document.activeElement || element.contains(document.activeElement);
+
+// ---- Tabs ----
+
+function openTab(id) {
+  for (const tab of $$(".tab")) {
+    const selected = tab.getAttribute("aria-controls") === id;
+    tab.setAttribute("aria-selected", String(selected));
+    document.getElementById(tab.getAttribute("aria-controls")).hidden = !selected;
+  }
+  try { localStorage.setItem("panel-tab", id); } catch {}
+}
+$$(".tab").forEach((tab) => (tab.onclick = () => openTab(tab.getAttribute("aria-controls"))));
+$("#change-post").onclick = (event) => { event.preventDefault(); openTab("posting"); $("#post-day").focus(); };
+try { const saved = localStorage.getItem("panel-tab"); if (saved && document.getElementById(saved)) openTab(saved); } catch {}
+
 // ---- State ----
 
 async function loadState() {
   state = await api("/api/state");
   renderStatus();
-  renderServer();
-  if (!document.activeElement || !document.activeElement.closest("#hosts-body")) {
-    hosts = state.hosts.map((row) => ({ ...row }));
-    renderHosts();
-  }
-  $("#token").placeholder = state.token_set ? "Set — type a new token only to replace it" : "Not set — paste the bot token here";
-  if (document.activeElement !== $("#calendar")) $("#calendar").value = state.calendar_id;
-  if (document.activeElement !== $("#contact")) $("#contact").value = state.contact_host;
+  renderPosting();
+  if (!focused($("#hosts-body"))) { hosts = state.hosts.map((row) => ({ ...row })); renderHosts(); }
+  renderContact();
+  $("#token").placeholder = state.token_set ? "A token is saved" : "No token yet: paste the bot token";
+  if (!focused($("#calendar"))) $("#calendar").value = state.calendar_id;
 }
 
 function renderStatus() {
   const status = state.status;
-  if (!status) {
-    $("#status-text").textContent = "The bot has not run yet.";
+  const failed = status && !status.ok;
+  const on = state.schedule_on;
+  let title, detail, kind;
+  if (failed) {
+    title = "The last run failed.";
+    kind = "failed";
+    detail = `Run ${timeAgo(status.time)} on the ${status.server} server.`;
+  } else if (on) {
+    title = "The bot is running.";
+    kind = "running";
+    detail = status ? `Last run ${timeAgo(status.time)} on the ${status.server} server. ${status.results.join(" ")}`
+                    : "It runs every 5 minutes and after each restart.";
   } else {
-    $("#status-text").innerHTML = `Last run: <b>${timeAgo(status.time)}</b> on the ${escapeHtml(status.server)} server — `
-      + (status.ok ? '<span class="ok">OK</span>' : '<span class="bad">failed</span>');
+    title = "The bot is paused.";
+    kind = "paused";
+    detail = state.schedule_supported
+      ? "Turn on automatic run, or click Sync now to update Discord one time."
+      : "Automatic run works on Windows only. Click Sync now to update Discord one time.";
   }
-  $("#status-results").innerHTML = (status?.results || []).map((line) => `<div class="muted">${escapeHtml(line)}</div>`).join("");
-  $("#status-error").hidden = !status?.error;
-  $("#status-error").textContent = status?.error || "";
+  $("#status").className = `status ${kind}`;
+  $("#status-title").textContent = title;
+  $("#status-detail").textContent = detail;
+  $("#status-error").hidden = !failed;
+  $("#status-error").textContent = failed ? status.error : "";
+  $("#next-post").textContent = state.next_post;
 
   const problem = state.google_problem;
   $("#google-banner").hidden = !problem;
-  $("#google-text").textContent = problem ? `⚠️ ${problem}` : "";
+  $("#google-text").textContent = problem || "";
 
-  const on = state.schedule_on;
-  $("#schedule-dot").className = on ? "dot on" : "dot";
-  $("#schedule-text").textContent = !state.schedule_supported ? "Works on Windows only."
-    : on ? "On — the bot runs by itself, also after a restart." : "Off — the bot does not run by itself.";
-  $("#schedule-btn").textContent = on ? "Turn off" : "Turn on";
-  $("#schedule-btn").disabled = !state.schedule_supported;
+  const button = $("#auto-switch");
+  button.setAttribute("aria-checked", String(on));
+  button.disabled = !state.schedule_supported;
+  button.title = on ? "Turn off automatic run" : "Turn on automatic run";
+
+  const real = state.server === "real";
+  $("#server-badge").className = real ? "server-badge real" : "server-badge";
+  $("#server-badge").textContent = real ? "Real server" : "Test server";
 }
 
-function renderServer() {
-  const real = state.server === "real";
-  $("#server-badge").className = `badge ${state.server}`;
-  $("#server-badge").textContent = real ? "REAL SERVER" : "TEST SERVER";
-  document.querySelectorAll("[data-server]").forEach((button) => {
+function renderPosting() {
+  if (!focused($("#post-day"))) $("#post-day").value = state.post_day;
+  if (!focused($("#post-time"))) $("#post-time").value = state.post_time;
+  for (const button of $$("[data-server]")) {
     const selected = button.dataset.server === state.server;
-    button.className = selected ? `on ${button.dataset.server}` : "";
-  });
+    button.setAttribute("aria-pressed", String(selected));
+    button.classList.toggle("real", button.dataset.server === "real");
+  }
   for (const name of ["test", "real"]) {
     const box = document.querySelector(`[data-fields="${name}"]`);
-    if (box.contains(document.activeElement)) continue;
+    box.classList.toggle("active", name === state.server);
+    if (focused(box)) continue;
     const values = state.servers[name];
     box.querySelector('[data-key="channel_id"]').value = values.channel_id;
     box.querySelector('[data-key="emoji"]').value = values.emoji;
     box.querySelector('[data-key="ping_everyone"]').checked = values.ping_everyone;
   }
+}
+
+function renderContact() {
+  const select = $("#contact");
+  if (focused(select)) return;
+  const names = state.hosts.map((row) => row.name);
+  if (state.contact_host && !names.includes(state.contact_host)) names.push(state.contact_host);
+  select.innerHTML = '<option value="">No contact line</option>'
+    + names.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
+  select.value = state.contact_host;
 }
 
 // ---- Preview (drawn like Discord) ----
@@ -321,21 +465,21 @@ function renderMessage(content, names) {
 
 async function loadPreview() {
   const box = $("#preview");
-  box.innerHTML = '<span class="muted">Reading the calendar…</span>';
+  box.innerHTML = '<p class="empty">Reading the calendar…</p>';
   try {
     const data = await api("/api/preview");
-    const note = data.note ? `<div class="error-box">⚠️ ${escapeHtml(data.note)}</div>` : "";
+    const note = data.note ? `<div class="warn-box" style="margin-top: 10px"><span>${escapeHtml(data.note)}</span></div>` : "";
     box.innerHTML = note + data.weeks.map((week) => `<div class="week-title">${escapeHtml(week.title)}</div>`
       + week.messages.map((content) => `
         <div class="msg">
-          <div class="avatar">📅</div>
+          <div class="avatar" aria-hidden="true">📅</div>
           <div class="msg-body">
-            <div class="msg-head">Schedule Bot<span class="tag">APP</span><span class="count">${content.length} / 2000 characters</span></div>
+            <div class="msg-head">Schedule Bot<span class="tag">APP</span><span class="count">${content.length} of 2000 characters</span></div>
             ${renderMessage(content, data.names)}
           </div>
         </div>`).join("")).join("");
   } catch (error) {
-    box.innerHTML = `<div class="error-box">${escapeHtml(error.message)}</div>`;
+    box.innerHTML = `<div class="error-box" style="margin: 12px 0">${escapeHtml(error.message)}</div>`;
   }
 }
 
@@ -344,11 +488,11 @@ async function loadPreview() {
 function renderHosts() {
   $("#hosts-body").innerHTML = hosts.length ? hosts.map((row, index) => `
     <tr>
-      <td><input type="text" data-index="${index}" data-key="name" value="${escapeHtml(row.name)}" placeholder="Blackeye"></td>
-      <td><input type="text" data-index="${index}" data-key="discord_id" value="${escapeHtml(row.discord_id)}" placeholder="123456789012345678" inputmode="numeric"></td>
-      <td><button class="danger" data-remove="${index}" title="Remove">✕</button></td>
+      <td><input type="text" aria-label="Name in the calendar" data-index="${index}" data-key="name" value="${escapeHtml(row.name)}" placeholder="Blackeye"></td>
+      <td><input type="text" aria-label="Discord user ID" data-index="${index}" data-key="discord_id" value="${escapeHtml(row.discord_id)}" placeholder="123456789012345678" inputmode="numeric"></td>
+      <td><button class="remove" data-remove="${index}" aria-label="Remove ${escapeHtml(row.name || "this host")}">✕</button></td>
     </tr>`).join("")
-    : '<tr><td colspan="3" class="muted">No hosts yet. Click “+ Add host”.</td></tr>';
+    : '<tr><td colspan="3" class="hint">No extra host names. The bot finds @names by itself.</td></tr>';
 }
 
 $("#hosts-body").addEventListener("input", (event) => {
@@ -370,14 +514,20 @@ $("#hosts-save").onclick = (event) => busy(event.target, async () => {
   await loadState();
   loadPreview();
 });
+$("#contact-save").onclick = (event) => busy(event.target, async () => {
+  await api("/api/settings", { contact_host: $("#contact").value });
+  toast("Contact saved.");
+  await loadState();
+  loadPreview();
+});
 
-// ---- Buttons ----
+// ---- Posting ----
 
-document.querySelectorAll("[data-server]").forEach((button) => {
+$$("[data-server]").forEach((button) => {
   button.onclick = () => busy(button, async () => {
     const server = button.dataset.server;
     if (server === state.server) return;
-    if (server === "real" && !confirm("Switch to the REAL server?\n\nIf the schedule is on, the bot posts there within 5 minutes.")) return;
+    if (server === "real" && !confirm("Switch to the REAL server?\n\nIf automatic run is on, the bot posts there within 5 minutes.")) return;
     await api("/api/settings", { server });
     toast(`The bot now posts to the ${server} server.`);
     await loadState();
@@ -385,8 +535,8 @@ document.querySelectorAll("[data-server]").forEach((button) => {
   });
 });
 
-$("#servers-save").onclick = (event) => busy(event.target, async () => {
-  const body = {};
+$("#posting-save").onclick = (event) => busy(event.target, async () => {
+  const body = { post_day: $("#post-day").value, post_time: $("#post-time").value };
   for (const name of ["test", "real"]) {
     const box = document.querySelector(`[data-fields="${name}"]`);
     body[name] = {
@@ -396,44 +546,54 @@ $("#servers-save").onclick = (event) => busy(event.target, async () => {
     };
   }
   await api("/api/settings", body);
-  toast("Server settings saved.");
+  await loadState();
+  toast(`Posting settings saved. Next weekly post: ${state.next_post}.`);
+  loadPreview();
+});
+
+// ---- Connections ----
+
+$("#connections-save").onclick = (event) => busy(event.target, async () => {
+  await api("/api/settings", { token: $("#token").value, calendar_id: $("#calendar").value });
+  $("#token").value = "";
+  toast("Connections saved.");
   await loadState();
   loadPreview();
 });
 
-$("#settings-save").onclick = (event) => busy(event.target, async () => {
-  await api("/api/settings", { token: $("#token").value, calendar_id: $("#calendar").value, contact_host: $("#contact").value });
-  $("#token").value = "";
-  toast("Settings saved.");
-  await loadState();
-  loadPreview();
-});
+async function signIn(event) {
+  await busy(event.target, async () => {
+    toast("A Google sign-in page opens in your browser. Finish it, then come back here.");
+    await api("/api/signin", {});
+    toast("Signed in to Google.");
+    await loadState();
+    loadPreview();
+  });
+}
+$("#signin-btn").onclick = signIn;
+$("#signin-btn-2").onclick = signIn;
+
+// ---- Status controls ----
 
 $("#sync-btn").onclick = (event) => busy(event.target, async () => {
   if (state.server === "real" && !confirm("Post to the REAL server now?")) return;
   try {
     const status = await api("/api/sync", {});
-    toast(status.results.join(" · ") || "Done.");
+    toast(status.results.join(" ") || "Synced.");
   } finally {
     await loadState();
   }
 });
 
-$("#schedule-btn").onclick = (event) => busy(event.target, async () => {
+$("#auto-switch").onclick = (event) => busy(event.target, async () => {
   const data = await api("/api/schedule", { on: !state.schedule_on });
   toast(data.schedule_on ? "Automatic run is on, also after a restart." : "Automatic run is off.");
   await loadState();
 });
 
-$("#signin-btn").onclick = (event) => busy(event.target, async () => {
-  toast("A Google sign-in page opens in your browser. Finish it, then come back here.");
-  await api("/api/signin", {});
-  toast("Signed in to Google.");
-  await loadState();
-  loadPreview();
-});
-
 $("#preview-btn").onclick = (event) => busy(event.target, loadPreview);
+
+// ---- Update ----
 
 $("#update-btn").onclick = (event) => busy(event.target, async () => {
   if (!confirm("Download and install the newest version now?")) return;
@@ -442,7 +602,7 @@ $("#update-btn").onclick = (event) => busy(event.target, async () => {
   output.textContent = "Updating…";
   try {
     const data = await api("/api/update", {});
-    output.textContent = data.output + "\n\nDone. Close the black window, then open “Start Control Panel.bat” again.";
+    output.textContent = `${data.output}\n\nDone. Close the black window, then open “Start Control Panel.bat” again.`;
   } catch (error) {
     output.textContent = error.message;
     throw error;

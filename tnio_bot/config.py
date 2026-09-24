@@ -6,6 +6,7 @@ this file.
 
 import os
 from dataclasses import dataclass
+from datetime import time
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -30,6 +31,10 @@ EASTERN = ZoneInfo("America/New_York")
 
 SERVERS = ("test", "real")
 
+DAY_NAMES = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+DEFAULT_POST_DAY = 6  # Sunday
+DEFAULT_POST_TIME = time(21)  # 9:00 PM Eastern
+
 
 @dataclass(frozen=True)
 class ServerSettings:
@@ -46,6 +51,8 @@ class Settings:
     real: ServerSettings
     google_calendar_id: str
     contact_host: str = ""  # host-list name for the footer line
+    post_day: int = DEFAULT_POST_DAY  # weekday (Monday = 0) when the next week is posted
+    post_time: time = DEFAULT_POST_TIME  # Eastern
 
     @property
     def active(self) -> ServerSettings:
@@ -62,7 +69,23 @@ class Settings:
             real=_server(env, "REAL"),
             google_calendar_id=(env.get("GOOGLE_CALENDAR_ID") or "").strip() or "primary",
             contact_host=(env.get("CONTACT_HOST") or "").strip(),
+            post_day=parse_day(env.get("POST_DAY")),
+            post_time=parse_time(env.get("POST_TIME")),
         )
+
+
+def parse_day(value: str | None) -> int:
+    """``"sunday"`` -> 6. An empty or unknown value gives the default (Sunday)."""
+    name = (value or "").strip().lower()
+    return DAY_NAMES.index(name) if name in DAY_NAMES else DEFAULT_POST_DAY
+
+
+def parse_time(value: str | None) -> time:
+    """``"21:00"`` -> 9:00 PM. An empty or wrong value gives the default (9:00 PM)."""
+    try:
+        return time.fromisoformat((value or "").strip())
+    except ValueError:
+        return DEFAULT_POST_TIME
 
 
 def load_settings() -> Settings:

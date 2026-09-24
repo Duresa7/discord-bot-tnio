@@ -16,7 +16,7 @@ changes. Google Calendar is the source of truth.
 | **Late-night cutoff** | 5:00 AM Eastern. An event that starts before the cutoff belongs to the day before. |
 | **Schedule day** | A calendar date plus its late-night events. Tuesday = Tue 5:00 AM to Wed 4:59 AM. |
 | **Schedule week** | Monday 5:00 AM to the next Monday 5:00 AM (Eastern). |
-| **Post time** | Sunday 9:00 PM Eastern. From this time, the next week is also posted. |
+| **Post time** | Default Sunday 9:00 PM Eastern; set in the panel (`POST_DAY`, `POST_TIME`). Any day and time in the week before the week starts. From this time, the next week is also posted. |
 | **Week messages** | The 3 bot messages for one schedule week. |
 | **Host list** | `data/hosts.csv` (local only): short host name → Discord user ID. |
 | **Server** | `test` or `real`. Each server has its own channel ID, emoji, and ping setting. |
@@ -108,14 +108,16 @@ list (the panel checks this). Its mention does not notify.
   the 5-minute trigger.
 - Active weeks at run time:
   - the current schedule week, always;
-  - the next schedule week, from the post time (Sunday 9:00 PM).
+  - the next schedule week, from the post time (default Sunday 9:00 PM).
 - The old week stays active until Monday 5:00 AM, so late Sunday changes still show.
 
 ## Sync of one active week
 
-The bot finds its own messages in the channel, posted after the week's post
-time minus 1 hour. It identifies each message by a marker: message 1 by the
-week title, messages 2 and 3 by their first day heading.
+The bot finds its own messages in the channel, posted in the 7 days and 1 hour
+before the week starts (the earliest possible post time). This window does not
+depend on the post-time setting, so a changed setting never causes a repost.
+It identifies each message by a marker: message 1 by the week title, messages
+2 and 3 by their first day heading.
 
 | Found | Action |
 | --- | --- |
@@ -136,6 +138,7 @@ Mentions never notify anyone on an edit or a repost.
 | `TEST_PING_EVERYONE`, `REAL_PING_EVERYONE` | `true` / `false` (default `false`) |
 | `GOOGLE_CALENDAR_ID` | Calendar to read (default `primary`) |
 | `CONTACT_HOST` | Host-list name for the footer contact line (empty = no line) |
+| `POST_DAY`, `POST_TIME` | Day (`monday`…`sunday`) and time (`HH:MM`, Eastern) of the weekly post (default `sunday`, `21:00`) |
 
 Values in `.env` win over the process environment, so a running panel always
 sees its own changes.
@@ -163,15 +166,17 @@ For the friend who runs the bot. No terminal.
 - **Start:** double-click `Start Control Panel.bat` → `http://localhost:8765` opens.
   Closing the window stops the panel only; the scheduled task continues.
 
-| Section | Behavior |
+Layout: a status band at the top, then the preview (left) and the settings in
+4 tabs (right). On narrow screens everything stacks.
+
+| Part | Behavior |
 | --- | --- |
-| Status | Last run time, server, result for each week, error. Refreshes every 30 s. A banner and a button show when Google sign-in is necessary. |
-| Automatic run | On/Off for the Task Scheduler task (5 minutes + sign-in; stays on after a restart). **Sync now** (on `real`, asks for confirmation first). |
+| Status band | One sentence: "The bot is running." (green edge), "The bot is paused." (amber), or "The last run failed." (crimson), with the last run and the error in plain words. The next weekly post time. Automatic run switch (Task Scheduler task: 5 minutes + sign-in; stays on after a restart). **Sync now** (on `real`, asks for confirmation first). A banner and a button when Google sign-in is necessary. Refreshes every 30 s. |
 | Preview | The 3 messages of each active week, drawn like Discord (bold, bullets, mentions as blue names, custom emoji). |
-| Server | Test / Real switch, and channel ID, emoji, ping for each server. |
-| Hosts | Table to add, change, and remove hosts. Name: no commas, unique. ID: 15–20 digits. |
-| Settings | Calendar ID, contact person. Bot token: never shown, only "set" / "not set"; typing a new one replaces it. |
-| Update | `git pull --ff-only`, then `pip install -r requirements.txt`. Then the friend restarts the panel. |
+| Posting tab | Weekly post day and time. Test / Real switch. Channel ID, emoji, and @everyone for each server. |
+| Hosts tab | Table to add, change, and remove extra host names (name: no commas, unique; ID: 15–20 digits). Contact person: a list of the host names, or no contact line. |
+| Connections tab | Bot token (never shown; typing a new one replaces it). Calendar ID. Google sign-in. |
+| Update tab | `git pull --ff-only`, then `pip install -r requirements.txt`. Then the friend restarts the panel. |
 
 Security: the panel listens on `127.0.0.1` only and has no password. Every
 request must have a `localhost` Host header, and write requests must be JSON

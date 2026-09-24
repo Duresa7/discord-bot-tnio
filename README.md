@@ -23,15 +23,14 @@ Google Calendar → Google Calendar API → bot (Windows PC) → Discord API →
 
 In the control panel:
 
-1. **Settings:** paste the Discord bot token and the Google Calendar ID.
-2. Click **Sign in to Google** and sign in with the account that can see the calendar.
-3. **Discord server:** type the test channel ID. Click **Save server settings**.
-4. **Hosts:** add each host's name and Discord user ID.
-5. Look at the **Preview**. If it is correct, click **Sync now**.
-6. **Automatic run:** click **Turn on**. The bot now runs every 5 minutes and after each Windows sign-in, also after a restart and when the panel is closed. Click **Turn off** to stop it.
-7. When the test works, switch **Discord server** to **Real server**.
+1. **Connections** tab: paste the Discord bot token and the Google Calendar ID. Click **Save connections**, then **Sign in to Google** with the account that can see the calendar.
+2. **Posting** tab: type the test channel ID. Check the weekly post day and time (default Sunday 9:00 PM Eastern). Click **Save posting settings**.
+3. **Hosts** tab: choose the contact person. Host names in event titles (`@name`) work by themselves.
+4. Look at the **Preview**. If it is correct, click **Sync now**.
+5. Turn on the **Automatic run** switch at the top. The bot now runs every 5 minutes and after each Windows sign-in, also after a restart and when the panel is closed. Turn the switch off to stop it.
+6. When the test works, choose **Real server** in the **Posting** tab.
 
-To get a new version later, click **Update the bot**, then start the panel again.
+To get a new version later, use the **Update** tab, then start the panel again.
 
 ## One-time setup (bot owner)
 

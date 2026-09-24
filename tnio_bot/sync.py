@@ -54,7 +54,8 @@ def build_weeks(
     hosts = {**member_name_map(members or []), **load_hosts(config.HOSTS_FILE)}
     server = settings.active
     weeks = []
-    for start in active_weeks(now or datetime.now(config.EASTERN)):
+    now = now or datetime.now(config.EASTERN)
+    for start in active_weeks(now, settings.post_day, settings.post_time):
         events = fetch_week_events(
             creds, settings.google_calendar_id, start, next_week_start(start)
         )

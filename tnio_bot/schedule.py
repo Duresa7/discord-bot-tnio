@@ -8,13 +8,12 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 
-from tnio_bot.config import EASTERN
+from tnio_bot.config import DEFAULT_POST_DAY, DEFAULT_POST_TIME, EASTERN
 from tnio_bot.hosts import host_text, mention_title_names, title_names
 
 log = logging.getLogger(__name__)
 
 LATE_NIGHT_CUTOFF = time(5)
-POST_TIME = time(21)  # Sunday 9:00 PM Eastern
 MAX_MESSAGE_LENGTH = 2000
 OVERFLOW_LINE = "- … more events: see the calendar"
 
@@ -65,18 +64,42 @@ def next_week_start(start: datetime) -> datetime:
     return _at_cutoff(start.date() + timedelta(days=7))
 
 
-def post_time(start: datetime) -> datetime:
-    """Return the time (Sunday 9:00 PM Eastern) when the week that begins at ``start`` is posted."""
-    return datetime.combine(start.date() - timedelta(days=1), POST_TIME, tzinfo=EASTERN)
+def post_time(
+    start: datetime, day: int = DEFAULT_POST_DAY, at: time = DEFAULT_POST_TIME
+) -> datetime:
+    """Return when the week that begins at ``start`` is posted.
+
+    That is weekday ``day`` at ``at`` (Eastern) in the week before, so it is
+    always earlier than ``start``. Monday before 5:00 AM means the Monday
+    late night just before ``start``.
+    """
+    previous = start.date() - timedelta(days=7)
+    moment = datetime.combine(previous + timedelta(days=day), at, tzinfo=EASTERN)
+    if moment < _at_cutoff(previous):
+        moment = datetime.combine(previous + timedelta(days=day + 7), at, tzinfo=EASTERN)
+    return moment
 
 
-def active_weeks(now: datetime) -> list[datetime]:
+def active_weeks(
+    now: datetime, day: int = DEFAULT_POST_DAY, at: time = DEFAULT_POST_TIME
+) -> list[datetime]:
     """Return the week starts to sync: the current week, plus the next week after its post time."""
     current = week_start(now)
     upcoming = next_week_start(current)
-    if now >= post_time(upcoming):
+    if now >= post_time(upcoming, day, at):
         return [current, upcoming]
     return [current]
+
+
+def next_post_time(
+    now: datetime, day: int = DEFAULT_POST_DAY, at: time = DEFAULT_POST_TIME
+) -> datetime:
+    """Return the next moment when a new week is posted."""
+    upcoming = next_week_start(week_start(now))
+    moment = post_time(upcoming, day, at)
+    if moment <= now:
+        moment = post_time(next_week_start(upcoming), day, at)
+    return moment
 
 
 def _at_cutoff(day: date) -> datetime:

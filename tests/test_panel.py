@@ -13,7 +13,14 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "STATUS_FILE", tmp_path / "status.json")
     monkeypatch.setattr(panel, "sign_in_problem", lambda: None)
     monkeypatch.setattr(task, "is_on", lambda: False)
-    for key in ("DISCORD_TOKEN", "DISCORD_SERVER", "GOOGLE_CALENDAR_ID", "CONTACT_HOST"):
+    for key in (
+        "DISCORD_TOKEN",
+        "DISCORD_SERVER",
+        "GOOGLE_CALENDAR_ID",
+        "CONTACT_HOST",
+        "POST_DAY",
+        "POST_TIME",
+    ):
         monkeypatch.delenv(key, raising=False)
     return panel.app.test_client()
 
@@ -84,6 +91,20 @@ def test_contact_must_be_in_the_host_list(client) -> None:
     client.post("/api/hosts", base_url=BASE_URL, json={"hosts": hosts})
     assert client.post("/api/settings", base_url=BASE_URL, json=body).status_code == 200
     assert config.load_settings().contact_host == "Rakkos"
+
+
+def test_save_post_day_and_time(client) -> None:
+    body = {"post_day": "friday", "post_time": "18:30"}
+    assert client.post("/api/settings", base_url=BASE_URL, json=body).status_code == 200
+    state = client.get("/api/state", base_url=BASE_URL).json
+    assert (state["post_day"], state["post_time"]) == ("friday", "18:30")
+    assert state["next_post"].startswith("Friday, ")
+    assert state["next_post"].endswith(" at 6:30 PM")
+
+
+def test_bad_post_day_is_refused(client) -> None:
+    response = client.post("/api/settings", base_url=BASE_URL, json={"post_day": "funday"})
+    assert response.status_code == 400
 
 
 def test_save_and_read_hosts(client) -> None:

@@ -13,6 +13,7 @@ import subprocess
 import sys
 import threading
 import webbrowser
+from datetime import datetime, time
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -21,6 +22,7 @@ from flask import Flask, abort, jsonify, request, send_file
 from tnio_bot import config, task
 from tnio_bot.calendar_sync import MissingCredentials, get_credentials, sign_in_problem
 from tnio_bot.hosts import host_row_errors, read_host_rows, write_host_rows
+from tnio_bot.schedule import next_post_time, time_text
 from tnio_bot.status import read_status
 from tnio_bot.sync import friendly_error, preview_weeks, run_once, setup_logging
 
@@ -89,6 +91,9 @@ def state():
         "token_set": bool(settings.discord_token),
         "calendar_id": settings.google_calendar_id,
         "contact_host": settings.contact_host,
+        "post_day": config.DAY_NAMES[settings.post_day],
+        "post_time": settings.post_time.strftime("%H:%M"),
+        "next_post": _next_post_text(settings),
         "hosts": read_host_rows(config.HOSTS_FILE),
         "schedule_supported": task.supported(),
         "schedule_on": task.is_on(),
@@ -113,6 +118,15 @@ def save_settings():
         if contact and contact.casefold() not in known:
             raise PanelError(f"'{contact}' is not in the host list. Add the host first.")
         updates["CONTACT_HOST"] = contact
+    if "post_day" in body:
+        if body["post_day"] not in config.DAY_NAMES:
+            raise PanelError("Choose a day for the weekly post.")
+        updates["POST_DAY"] = body["post_day"]
+    if "post_time" in body:
+        try:
+            updates["POST_TIME"] = time.fromisoformat(body["post_time"]).strftime("%H:%M")
+        except (TypeError, ValueError):
+            raise PanelError("Choose a time for the weekly post.") from None
     if body.get("token", "").strip():
         updates["DISCORD_TOKEN"] = body["token"].strip()
     for name in config.SERVERS:
@@ -208,6 +222,12 @@ def update():
         if result.returncode != 0:
             raise PanelError("The update failed:\n\n" + "\n\n".join(output))
     return {"output": "\n\n".join(output)}
+
+
+def _next_post_text(settings: config.Settings) -> str:
+    """For example ``Sunday, September 27 at 9:00 PM``."""
+    moment = next_post_time(datetime.now(config.EASTERN), settings.post_day, settings.post_time)
+    return f"{moment:%A, %B} {moment.day} at {time_text(moment)}"
 
 
 def _ensure_env_file() -> None:

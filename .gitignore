@@ -11,6 +11,11 @@ dist/
 # Virtual environments
 .venv/
 
+# Local data (the control panel edits these)
+data/hosts.csv
+status.json
+sync.lock
+
 # Logs
 bot.log*
 

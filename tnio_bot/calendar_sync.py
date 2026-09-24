@@ -27,6 +27,10 @@ class SignInRequired(RuntimeError):
     """Google sign-in is necessary, but this run must not open a browser."""
 
 
+class MissingCredentials(RuntimeError):
+    """``credentials.json`` (the OAuth client file) is not in the project folder."""
+
+
 def get_credentials(interactive: bool = True) -> Credentials:
     """Return valid Google credentials.
 
@@ -52,7 +56,7 @@ def get_credentials(interactive: bool = True) -> Credentials:
         if not interactive:
             raise SignInRequired("Google sign-in is necessary. Run: python bot.py --sign-in")
         if not CREDENTIALS_FILE.exists():
-            raise SystemExit(
+            raise MissingCredentials(
                 f"{CREDENTIALS_FILE.name} not found. Download the OAuth client (Desktop app) "
                 "from Google Cloud and put it in the project folder."
             )
@@ -61,6 +65,19 @@ def get_credentials(interactive: bool = True) -> Credentials:
 
     TOKEN_FILE.write_text(creds.to_json())
     return creds
+
+
+def sign_in_problem() -> str | None:
+    """Return None if Google access works without a browser, else a short reason."""
+    if not CREDENTIALS_FILE.exists():
+        return f"{CREDENTIALS_FILE.name} is missing from the bot folder."
+    try:
+        get_credentials(interactive=False)
+    except SignInRequired:
+        return "Google sign-in is necessary."
+    except Exception as error:  # for example no network during a token refresh
+        return f"Google check failed: {error}"
+    return None
 
 
 def _service(creds: Credentials):

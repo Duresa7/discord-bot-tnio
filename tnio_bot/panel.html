@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Schedule Bot Panel</title>
+<style>
+  :root {
+    --bg: #1e1f22; --card: #2b2d31; --field: #1e1f22; --line: #3f4147;
+    --text: #dbdee1; --muted: #949ba4; --accent: #5865f2; --accent-hover: #4752c4;
+    --green: #23a55a; --red: #f23f43; --yellow: #f0b232;
+    --mention-bg: rgba(88, 101, 242, .3); --mention-text: #c9cdfb;
+    --chat: #313338;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.45 "gg sans", "Segoe UI", system-ui, sans-serif; }
+  header { display: flex; align-items: center; gap: 12px; padding: 16px 24px;
+           border-bottom: 1px solid var(--line); background: var(--card); }
+  header h1 { font-size: 18px; margin: 0; flex: 1; }
+  main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px;
+         display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 760px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border-radius: 10px; padding: 18px; min-width: 0; }
+  .card h2 { font-size: 13px; letter-spacing: .04em; text-transform: uppercase;
+             color: var(--muted); margin: 0 0 12px; }
+  .wide { grid-column: 1 / -1; }
+  .badge { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 99px; }
+  .badge.test { background: #3b3d44; color: var(--text); }
+  .badge.real { background: var(--red); color: #fff; }
+  .banner { grid-column: 1 / -1; background: rgba(240, 178, 50, .15); border: 1px solid var(--yellow);
+            border-radius: 10px; padding: 12px 16px; display: flex; gap: 12px; align-items: center; }
+  .banner[hidden] { display: none; }
+  .banner span { flex: 1; }
+  button { font: inherit; font-weight: 600; border: 0; border-radius: 6px; padding: 8px 14px;
+           background: var(--accent); color: #fff; cursor: pointer; }
+  button:hover { background: var(--accent-hover); }
+  button.secondary { background: #4e5058; }
+  button.secondary:hover { background: #6d6f78; }
+  button.danger { background: transparent; color: var(--red); padding: 6px 8px; }
+  button:disabled { opacity: .5; cursor: wait; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .ok { color: var(--green); } .bad { color: var(--red); }
+  .error-box { background: rgba(242, 63, 67, .12); border-left: 3px solid var(--red);
+               padding: 8px 10px; border-radius: 4px; margin: 8px 0; }
+  label { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase;
+          color: var(--muted); margin: 10px 0 4px; }
+  input[type=text], input[type=password] { width: 100%; padding: 9px 10px; border-radius: 6px;
+          border: 1px solid transparent; background: var(--field); color: var(--text); font: inherit; }
+  input:focus { outline: none; border-color: var(--accent); }
+  .check { display: flex; gap: 8px; align-items: center; margin-top: 10px; font-size: 14px;
+           text-transform: none; color: var(--text); font-weight: 500; }
+  .switch { display: inline-flex; background: var(--field); border-radius: 8px; padding: 3px; }
+  .switch button { background: transparent; color: var(--muted); padding: 6px 16px; }
+  .switch button.on { background: var(--accent); color: #fff; }
+  .switch button.on.real { background: var(--red); }
+  .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 560px) { .columns { grid-template-columns: 1fr; } }
+  table { width: 100%; border-collapse: collapse; }
+  td, th { padding: 4px; text-align: left; }
+  th { font-size: 12px; color: var(--muted); text-transform: uppercase; }
+  .toggle { display: flex; align-items: center; gap: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
+  .dot.on { background: var(--green); }
+  pre { white-space: pre-wrap; background: var(--field); padding: 10px; border-radius: 6px;
+        font-size: 12px; max-height: 240px; overflow: auto; }
+  /* Discord-like preview */
+  .chat { background: var(--chat); border-radius: 8px; padding: 12px 16px; }
+  .week-title { color: var(--muted); font-size: 12px; font-weight: 700; text-align: center;
+                margin: 14px 0 6px; text-transform: uppercase; }
+  .msg { display: flex; gap: 14px; padding: 8px 0; }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--accent); flex: none;
+            display: grid; place-items: center; font-weight: 700; color: #fff; }
+  .msg-body { min-width: 0; flex: 1; }
+  .msg-head { font-weight: 600; color: #fff; }
+  .msg-head .tag { background: var(--accent); font-size: 10px; padding: 1px 4px; border-radius: 3px;
+                   margin-left: 4px; vertical-align: 2px; }
+  .msg-head .count { color: var(--muted); font-size: 12px; font-weight: 400; margin-left: 6px; }
+  .msg-body ul { margin: 2px 0; padding-left: 22px; }
+  .gap { height: 10px; }
+  .mention { background: var(--mention-bg); color: var(--mention-text); border-radius: 3px;
+             padding: 0 2px; font-weight: 500; }
+  .emoji { width: 20px; height: 20px; vertical-align: -4px; }
+  #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 10px 18px;
+           border-radius: 8px; background: var(--green); color: #fff; font-weight: 600;
+           max-width: 90vw; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+  #toast.bad { background: var(--red); }
+  #toast[hidden] { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>📅 Schedule Bot — Control Panel</h1>
+  <span id="server-badge" class="badge test">TEST SERVER</span>
+</header>
+
+<main>
+  <div id="google-banner" class="banner" hidden>
+    <span id="google-text"></span>
+    <button id="signin-btn">Sign in to Google</button>
+  </div>
+
+  <section class="card">
+    <h2>Status</h2>
+    <div id="status-text" class="muted">Loading…</div>
+    <div id="status-results"></div>
+    <div id="status-error" class="error-box" hidden></div>
+  </section>
+
+  <section class="card">
+    <h2>Bot schedule</h2>
+    <div class="toggle">
+      <span id="schedule-dot" class="dot"></span>
+      <span id="schedule-text">…</span>
+    </div>
+    <p class="muted">When it is on, Windows runs the bot every 5 minutes, even when this panel is closed.</p>
+    <div class="row">
+      <button id="schedule-btn" class="secondary">Turn on</button>
+      <button id="sync-btn">Sync now</button>
+    </div>
+  </section>
+
+  <section class="card wide">
+    <div class="row" style="justify-content: space-between">
+      <h2 style="margin: 0">Preview</h2>
+      <button id="preview-btn" class="secondary">Refresh preview</button>
+    </div>
+    <p class="muted">This is how the messages will look in Discord. Nothing is posted.</p>
+    <div id="preview" class="chat"><span class="muted">Loading…</span></div>
+  </section>
+
+  <section class="card wide">
+    <h2>Discord server</h2>
+    <div class="row">
+      <span class="muted">The bot posts to:</span>
+      <div class="switch" role="group" aria-label="Server">
+        <button data-server="test">Test server</button>
+        <button data-server="real">Real server</button>
+      </div>
+    </div>
+    <div class="columns">
+      <div data-fields="test">
+        <label>Test channel ID</label><input type="text" data-key="channel_id" inputmode="numeric">
+        <label>Test emoji (optional)</label><input type="text" data-key="emoji" placeholder="<:tnio:123456789012345678>">
+        <label class="check"><input type="checkbox" data-key="ping_everyone"> Ping @everyone on each new week</label>
+      </div>
+      <div data-fields="real">
+        <label>Real channel ID</label><input type="text" data-key="channel_id" inputmode="numeric">
+        <label>Real emoji (optional)</label><input type="text" data-key="emoji" placeholder="<:tnio:123456789012345678>">
+        <label class="check"><input type="checkbox" data-key="ping_everyone"> Ping @everyone on each new week</label>
+      </div>
+    </div>
+    <p class="muted">Channel ID: in Discord, turn on Developer Mode, right-click the channel, click “Copy Channel ID”.
+      Emoji code: type <code>\:emojiname:</code> in Discord and copy the result.</p>
+    <button id="servers-save">Save server settings</button>
+  </section>
+
+  <section class="card wide">
+    <h2>Hosts</h2>
+    <p class="muted">In a calendar event, write <code>Host: Name</code> in the description (several: <code>Host: Name1, Name2</code>).
+      A name in this list shows as a clickable @mention. User ID: Developer Mode → right-click the user → “Copy User ID”.</p>
+    <table>
+      <thead><tr><th>Name in the calendar</th><th>Discord user ID</th><th></th></tr></thead>
+      <tbody id="hosts-body"></tbody>
+    </table>
+    <div class="row" style="margin-top: 10px">
+      <button id="host-add" class="secondary">+ Add host</button>
+      <button id="hosts-save">Save hosts</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Settings</h2>
+    <label for="token">Discord bot token</label>
+    <input id="token" type="password" autocomplete="off">
+    <label for="calendar">Google Calendar ID</label>
+    <input id="calendar" type="text">
+    <p class="muted">Google Calendar → Settings → (the calendar) → Integrate calendar → Calendar ID.</p>
+    <button id="settings-save">Save settings</button>
+  </section>
+
+  <section class="card">
+    <h2>Update</h2>
+    <p class="muted">Get the newest version of the bot from GitHub.</p>
+    <button id="update-btn" class="secondary">Update the bot</button>
+    <pre id="update-output" hidden></pre>
+  </section>
+</main>
+
+<div id="toast" hidden></div>
+
+<script>
+const $ = (selector) => document.querySelector(selector);
+let state = null;
+let hosts = [];
+
+async function api(path, body) {
+  const options = body === undefined ? {} : {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+  };
+  const response = await fetch(path, options);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.error) throw new Error(data.error || `The panel returned error ${response.status}.`);
+  return data;
+}
+
+function toast(message, bad = false) {
+  const box = $("#toast");
+  box.textContent = message;
+  box.className = bad ? "bad" : "";
+  box.hidden = false;
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => (box.hidden = true), bad ? 9000 : 3500);
+}
+
+async function busy(button, work) {
+  button.disabled = true;
+  try { await work(); } catch (error) { toast(error.message, true); } finally { button.disabled = false; }
+}
+
+function escapeHtml(text) {
+  return text.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+}
+
+function timeAgo(iso) {
+  const minutes = Math.round((Date.now() - new Date(iso)) / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  return new Date(iso).toLocaleString();
+}
+
+// ---- State ----
+
+async function loadState() {
+  state = await api("/api/state");
+  renderStatus();
+  renderServer();
+  if (!document.activeElement || !document.activeElement.closest("#hosts-body")) {
+    hosts = state.hosts.map((row) => ({ ...row }));
+    renderHosts();
+  }
+  $("#token").placeholder = state.token_set ? "Set — type a new token only to replace it" : "Not set — paste the bot token here";
+  if (document.activeElement !== $("#calendar")) $("#calendar").value = state.calendar_id;
+}
+
+function renderStatus() {
+  const status = state.status;
+  if (!status) {
+    $("#status-text").textContent = "The bot has not run yet.";
+  } else {
+    $("#status-text").innerHTML = `Last run: <b>${timeAgo(status.time)}</b> on the ${escapeHtml(status.server)} server — `
+      + (status.ok ? '<span class="ok">OK</span>' : '<span class="bad">failed</span>');
+  }
+  $("#status-results").innerHTML = (status?.results || []).map((line) => `<div class="muted">${escapeHtml(line)}</div>`).join("");
+  $("#status-error").hidden = !status?.error;
+  $("#status-error").textContent = status?.error || "";
+
+  const problem = state.google_problem;
+  $("#google-banner").hidden = !problem;
+  $("#google-text").textContent = problem ? `⚠️ ${problem}` : "";
+
+  const on = state.schedule_on;
+  $("#schedule-dot").className = on ? "dot on" : "dot";
+  $("#schedule-text").textContent = !state.schedule_supported ? "Works on Windows only."
+    : on ? "On — the bot runs every 5 minutes." : "Off — the bot does not run by itself.";
+  $("#schedule-btn").textContent = on ? "Turn off" : "Turn on";
+  $("#schedule-btn").disabled = !state.schedule_supported;
+}
+
+function renderServer() {
+  const real = state.server === "real";
+  $("#server-badge").className = `badge ${state.server}`;
+  $("#server-badge").textContent = real ? "REAL SERVER" : "TEST SERVER";
+  document.querySelectorAll("[data-server]").forEach((button) => {
+    const selected = button.dataset.server === state.server;
+    button.className = selected ? `on ${button.dataset.server}` : "";
+  });
+  for (const name of ["test", "real"]) {
+    const box = document.querySelector(`[data-fields="${name}"]`);
+    if (box.contains(document.activeElement)) continue;
+    const values = state.servers[name];
+    box.querySelector('[data-key="channel_id"]').value = values.channel_id;
+    box.querySelector('[data-key="emoji"]').value = values.emoji;
+    box.querySelector('[data-key="ping_everyone"]').checked = values.ping_everyone;
+  }
+}
+
+// ---- Preview (drawn like Discord) ----
+
+function renderInline(text, names) {
+  return escapeHtml(text)
+    .replace(/&lt;@!?(\d+)&gt;/g, (_, id) => `<span class="mention">@${escapeHtml(names[id] || "unknown user")}</span>`)
+    .replace(/&lt;(a?):(\w+):(\d+)&gt;/g, (_, animated, name, id) =>
+      `<img class="emoji" alt=":${name}:" title=":${name}:" src="https://cdn.discordapp.com/emojis/${id}.${animated ? "gif" : "png"}">`)
+    .replace(/@everyone/g, '<span class="mention">@everyone</span>')
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[^*])\*([^*]+)\*/g, "$1<em>$2</em>");
+}
+
+function renderMessage(content, names) {
+  let html = "", list = [];
+  const flush = () => { if (list.length) { html += `<ul>${list.join("")}</ul>`; list = []; } };
+  for (const line of content.split("\n")) {
+    if (line.startsWith("- ")) { list.push(`<li>${renderInline(line.slice(2), names)}</li>`); continue; }
+    flush();
+    html += line.trim() === "" ? '<div class="gap"></div>' : `<div>${renderInline(line, names)}</div>`;
+  }
+  flush();
+  return html;
+}
+
+async function loadPreview() {
+  const box = $("#preview");
+  box.innerHTML = '<span class="muted">Reading the calendar…</span>';
+  try {
+    const data = await api("/api/preview");
+    box.innerHTML = data.weeks.map((week) => `<div class="week-title">${escapeHtml(week.title)}</div>`
+      + week.messages.map((content) => `
+        <div class="msg">
+          <div class="avatar">📅</div>
+          <div class="msg-body">
+            <div class="msg-head">Schedule Bot<span class="tag">APP</span><span class="count">${content.length} / 2000 characters</span></div>
+            ${renderMessage(content, data.names)}
+          </div>
+        </div>`).join("")).join("");
+  } catch (error) {
+    box.innerHTML = `<div class="error-box">${escapeHtml(error.message)}</div>`;
+  }
+}
+
+// ---- Hosts table ----
+
+function renderHosts() {
+  $("#hosts-body").innerHTML = hosts.length ? hosts.map((row, index) => `
+    <tr>
+      <td><input type="text" data-index="${index}" data-key="name" value="${escapeHtml(row.name)}" placeholder="Blackeye"></td>
+      <td><input type="text" data-index="${index}" data-key="discord_id" value="${escapeHtml(row.discord_id)}" placeholder="123456789012345678" inputmode="numeric"></td>
+      <td><button class="danger" data-remove="${index}" title="Remove">✕</button></td>
+    </tr>`).join("")
+    : '<tr><td colspan="3" class="muted">No hosts yet. Click “+ Add host”.</td></tr>';
+}
+
+$("#hosts-body").addEventListener("input", (event) => {
+  const { index, key } = event.target.dataset;
+  if (index !== undefined) hosts[index][key] = event.target.value;
+});
+$("#hosts-body").addEventListener("click", (event) => {
+  const index = event.target.dataset.remove;
+  if (index !== undefined) { hosts.splice(Number(index), 1); renderHosts(); }
+});
+$("#host-add").onclick = () => {
+  hosts.push({ name: "", discord_id: "" });
+  renderHosts();
+  document.querySelector(`[data-index="${hosts.length - 1}"][data-key="name"]`).focus();
+};
+$("#hosts-save").onclick = (event) => busy(event.target, async () => {
+  await api("/api/hosts", { hosts });
+  toast("Hosts saved.");
+  await loadState();
+  loadPreview();
+});
+
+// ---- Buttons ----
+
+document.querySelectorAll("[data-server]").forEach((button) => {
+  button.onclick = () => busy(button, async () => {
+    const server = button.dataset.server;
+    if (server === state.server) return;
+    if (server === "real" && !confirm("Switch to the REAL server?\n\nIf the schedule is on, the bot posts there within 5 minutes.")) return;
+    await api("/api/settings", { server });
+    toast(`The bot now posts to the ${server} server.`);
+    await loadState();
+    loadPreview();
+  });
+});
+
+$("#servers-save").onclick = (event) => busy(event.target, async () => {
+  const body = {};
+  for (const name of ["test", "real"]) {
+    const box = document.querySelector(`[data-fields="${name}"]`);
+    body[name] = {
+      channel_id: box.querySelector('[data-key="channel_id"]').value,
+      emoji: box.querySelector('[data-key="emoji"]').value,
+      ping_everyone: box.querySelector('[data-key="ping_everyone"]').checked,
+    };
+  }
+  await api("/api/settings", body);
+  toast("Server settings saved.");
+  await loadState();
+  loadPreview();
+});
+
+$("#settings-save").onclick = (event) => busy(event.target, async () => {
+  await api("/api/settings", { token: $("#token").value, calendar_id: $("#calendar").value });
+  $("#token").value = "";
+  toast("Settings saved.");
+  await loadState();
+  loadPreview();
+});
+
+$("#sync-btn").onclick = (event) => busy(event.target, async () => {
+  if (state.server === "real" && !confirm("Post to the REAL server now?")) return;
+  try {
+    const status = await api("/api/sync", {});
+    toast(status.results.join(" · ") || "Done.");
+  } finally {
+    await loadState();
+  }
+});
+
+$("#schedule-btn").onclick = (event) => busy(event.target, async () => {
+  const data = await api("/api/schedule", { on: !state.schedule_on });
+  toast(data.schedule_on ? "The schedule is on. The bot runs every 5 minutes." : "The schedule is off.");
+  await loadState();
+});
+
+$("#signin-btn").onclick = (event) => busy(event.target, async () => {
+  toast("A Google sign-in page opens in your browser. Finish it, then come back here.");
+  await api("/api/signin", {});
+  toast("Signed in to Google.");
+  await loadState();
+  loadPreview();
+});
+
+$("#preview-btn").onclick = (event) => busy(event.target, loadPreview);
+
+$("#update-btn").onclick = (event) => busy(event.target, async () => {
+  if (!confirm("Download and install the newest version now?")) return;
+  const output = $("#update-output");
+  output.hidden = false;
+  output.textContent = "Updating…";
+  try {
+    const data = await api("/api/update", {});
+    output.textContent = data.output + "\n\nDone. Close the black window, then open “Start Control Panel.bat” again.";
+  } catch (error) {
+    output.textContent = error.message;
+    throw error;
+  }
+});
+
+loadState().then(loadPreview).catch((error) => toast(error.message, true));
+setInterval(() => loadState().catch(() => {}), 30000);
+</script>
+</body>
+</html>

@@ -47,6 +47,48 @@ def load_hosts(path: Path) -> dict[str, int]:
     return hosts
 
 
+def read_host_rows(path: Path) -> list[dict[str, str]]:
+    """Return the rows of ``hosts.csv`` as written, for the panel's table."""
+    if not path.exists():
+        return []
+    with path.open(newline="", encoding="utf-8-sig") as file:
+        return [
+            {
+                "name": (row.get("name") or "").strip(),
+                "discord_id": (row.get("discord_id") or "").strip(),
+            }
+            for row in csv.DictReader(file)
+            if (row.get("name") or "").strip()
+        ]
+
+
+def host_row_errors(rows: list[dict[str, str]]) -> list[str]:
+    """Return one message for each problem in ``rows``. An empty list means the rows are valid."""
+    errors, seen = [], set()
+    for number, row in enumerate(rows, start=1):
+        name = row.get("name", "").strip()
+        user_id = row.get("discord_id", "").strip()
+        if not name:
+            errors.append(f"Row {number}: the name is empty.")
+        elif "," in name:
+            errors.append(f"Row {number}: a name cannot contain a comma.")
+        elif name.casefold() in seen:
+            errors.append(f"Row {number}: '{name}' is in the list two times.")
+        seen.add(name.casefold())
+        if not (user_id.isdigit() and 15 <= len(user_id) <= 20):
+            errors.append(f"Row {number}: the Discord user ID must be 15 to 20 digits.")
+    return errors
+
+
+def write_host_rows(path: Path, rows: list[dict[str, str]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="", encoding="utf-8") as file:
+        writer = csv.DictWriter(file, fieldnames=["name", "discord_id"])
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({"name": row["name"].strip(), "discord_id": row["discord_id"].strip()})
+
+
 def host_text(name: str, hosts: dict[str, int]) -> str:
     """Return a mention ``<@id>`` for a known host, else the plain name."""
     user_id = hosts.get(name.casefold())

@@ -18,7 +18,8 @@ changes. Google Calendar is the source of truth.
 | **Schedule week** | Monday 5:00 AM to the next Monday 5:00 AM (Eastern). |
 | **Post time** | Sunday 9:00 PM Eastern. From this time, the next week is also posted. |
 | **Week messages** | The 3 bot messages for one schedule week. |
-| **Host list** | `data/hosts.csv`: short host name → Discord user ID. |
+| **Host list** | `data/hosts.csv` (local only): short host name → Discord user ID. |
+| **Server** | `test` or `real`. Each server has its own channel ID, emoji, and ping setting. |
 
 ## Source events
 
@@ -30,11 +31,11 @@ changes. Google Calendar is the source of truth.
 
 | Message | Contents |
 | --- | --- |
-| 1 | `@everyone` line (only if `PING_EVERYONE=true`), header, Monday, Tuesday |
+| 1 | `@everyone` line (only if the active server's ping setting is on), header, Monday, Tuesday |
 | 2 | Wednesday, Thursday, Friday |
 | 3 | Saturday, Sunday |
 
-Header (same text as the manual schedule; `<emoji>` comes from `SCHEDULE_EMOJI`, empty = none):
+Header (same text as the manual schedule; `<emoji>` is the active server's emoji, empty = none):
 
 ```
 **EVENT SCHEDULE FOR THE WEEK OF SEPTEMBER 21ST - SEPTEMBER 27TH**
@@ -91,7 +92,7 @@ week title, messages 2 and 3 by their first day heading.
 | Found | Action |
 | --- | --- |
 | All 3 | Edit each message whose text changed. No change = no API call. |
-| None | Post all 3. Message 1 pings `@everyone` if `PING_EVERYONE=true`. |
+| None | Post all 3. Message 1 pings `@everyone` if the active server's ping setting is on. |
 | 1 or 2 (somebody deleted one) | Delete the ones found, then post all 3 again. No `@everyone` ping. |
 
 Mentions never notify anyone on an edit or a repost.
@@ -100,13 +101,15 @@ Mentions never notify anyone on an edit or a repost.
 
 | Key | Meaning |
 | --- | --- |
-| `DISCORD_TOKEN` | Bot token |
-| `DISCORD_CHANNEL_ID` | Schedule channel |
-| `PING_EVERYONE` | `true` / `false` (default `false`) |
-| `SCHEDULE_EMOJI` | Emoji around "ALL TIMES IN EST", for example `<:tnio:123>` |
+| `DISCORD_TOKEN` | Bot token (one bot for both servers) |
+| `DISCORD_SERVER` | `test` or `real` (default `test`) |
+| `TEST_CHANNEL_ID`, `REAL_CHANNEL_ID` | Schedule channel on each server |
+| `TEST_SCHEDULE_EMOJI`, `REAL_SCHEDULE_EMOJI` | Emoji around "ALL TIMES IN EST", for example `<:tnio:123>` |
+| `TEST_PING_EVERYONE`, `REAL_PING_EVERYONE` | `true` / `false` (default `false`) |
 | `GOOGLE_CALENDAR_ID` | Calendar to read (default `primary`) |
 
-Test server → real server: change `DISCORD_CHANNEL_ID` and `SCHEDULE_EMOJI`.
+Values in `.env` win over the process environment, so a running panel always
+sees its own changes.
 
 ## Discord permissions
 
@@ -118,3 +121,29 @@ No privileged intents.
 - Scheduled runs never open a browser. If Google sign-in is necessary, the run
   logs an error and stops. Fix: run `python bot.py --sign-in` by hand.
 - Errors go to `bot.log` in the project folder.
+- Each run writes `status.json` (time, server, result for each week, error in plain words).
+- Only one sync runs at a time (`sync.lock`). A run that finds the lock taken skips.
+
+## Control panel
+
+For the friend who runs the bot. No terminal.
+
+- **Install:** download the ZIP from GitHub, unzip, double-click `Install.bat`.
+  It installs Git with `winget` if missing, connects the folder to GitHub,
+  makes `.venv`, installs `requirements.txt`, and makes `.env` and `data/hosts.csv`.
+- **Start:** double-click `Start Control Panel.bat` → `http://localhost:8765` opens.
+  Closing the window stops the panel only; the scheduled task continues.
+
+| Section | Behavior |
+| --- | --- |
+| Status | Last run time, server, result for each week, error. Refreshes every 30 s. A banner and a button show when Google sign-in is necessary. |
+| Schedule | On/Off for the Task Scheduler task. **Sync now** (on `real`, asks for confirmation first). |
+| Preview | The 3 messages of each active week, drawn like Discord (bold, bullets, mentions as blue names, custom emoji). |
+| Server | Test / Real switch, and channel ID, emoji, ping for each server. |
+| Hosts | Table to add, change, and remove hosts. Name: no commas, unique. ID: 15–20 digits. |
+| Settings | Calendar ID. Bot token: never shown, only "set" / "not set"; typing a new one replaces it. |
+| Update | `git pull --ff-only`, then `pip install -r requirements.txt`. Then the friend restarts the panel. |
+
+Security: the panel listens on `127.0.0.1` only and has no password. Every
+request must have a `localhost` Host header, and write requests must be JSON
+with no foreign Origin, so other websites cannot use the panel.

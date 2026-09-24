@@ -1,4 +1,33 @@
-from tnio_bot.hosts import host_text, load_hosts, parse_host_names
+from tnio_bot.hosts import (
+    host_row_errors,
+    host_text,
+    load_hosts,
+    parse_host_names,
+    read_host_rows,
+    write_host_rows,
+)
+
+
+def test_write_and_read_rows(tmp_path) -> None:
+    path = tmp_path / "data" / "hosts.csv"
+    rows = [{"name": "Blackeye", "discord_id": "123456789012345678"}]
+    write_host_rows(path, rows)
+    assert read_host_rows(path) == rows
+    assert load_hosts(path) == {"blackeye": 123456789012345678}
+
+
+def test_host_row_errors() -> None:
+    good = {"name": "Blackeye", "discord_id": "123456789012345678"}
+    assert host_row_errors([good]) == []
+    errors = host_row_errors(
+        [good, {"name": "blackeye", "discord_id": "1"}, {"name": "", "discord_id": "x"}]
+    )
+    assert errors == [
+        "Row 2: 'blackeye' is in the list two times.",
+        "Row 2: the Discord user ID must be 15 to 20 digits.",
+        "Row 3: the name is empty.",
+        "Row 3: the Discord user ID must be 15 to 20 digits.",
+    ]
 
 
 def test_plain_host_line() -> None:

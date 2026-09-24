@@ -1,0 +1,88 @@
+import pytest
+
+from tnio_bot import config, panel, task
+
+BASE_URL = "http://localhost:8765"
+
+
+@pytest.fixture
+def client(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "ENV_FILE", tmp_path / ".env")
+    monkeypatch.setattr(config, "ENV_EXAMPLE_FILE", tmp_path / ".env.example")
+    monkeypatch.setattr(config, "HOSTS_FILE", tmp_path / "data" / "hosts.csv")
+    monkeypatch.setattr(config, "STATUS_FILE", tmp_path / "status.json")
+    monkeypatch.setattr(panel, "sign_in_problem", lambda: None)
+    monkeypatch.setattr(task, "is_on", lambda: False)
+    for key in ("DISCORD_TOKEN", "DISCORD_SERVER", "GOOGLE_CALENDAR_ID"):
+        monkeypatch.delenv(key, raising=False)
+    return panel.app.test_client()
+
+
+def test_state_hides_the_token(client) -> None:
+    config.ENV_FILE.write_text("DISCORD_TOKEN=secret-value\n", encoding="utf-8")
+    response = client.get("/api/state", base_url=BASE_URL)
+    assert response.status_code == 200
+    assert response.json["token_set"] is True
+    assert "secret-value" not in response.get_data(as_text=True)
+
+
+def test_other_host_names_are_blocked(client) -> None:
+    assert client.get("/api/state", base_url="http://evil.example:8765").status_code == 403
+
+
+def test_write_needs_json(client) -> None:
+    response = client.post("/api/settings", base_url=BASE_URL, data="server=real")
+    assert response.status_code == 415
+
+
+def test_write_from_other_website_is_blocked(client) -> None:
+    response = client.post(
+        "/api/settings",
+        base_url=BASE_URL,
+        json={"server": "real"},
+        headers={"Origin": "https://evil.example"},
+    )
+    assert response.status_code == 403
+
+
+def test_save_settings(client) -> None:
+    config.ENV_EXAMPLE_FILE.write_text("# example\nDISCORD_TOKEN=\n", encoding="utf-8")
+    body = {
+        "server": "real",
+        "token": " new-token ",
+        "real": {"channel_id": "222", "emoji": "<:tnio:9>", "ping_everyone": True},
+    }
+    assert client.post("/api/settings", base_url=BASE_URL, json=body).status_code == 200
+    settings = config.load_settings()
+    assert settings.server == "real"
+    assert settings.discord_token == "new-token"
+    assert settings.active.channel_id == 222
+    assert settings.active.ping_everyone is True
+    assert config.ENV_FILE.read_text(encoding="utf-8").startswith("# example\n")
+
+
+def test_empty_token_keeps_the_old_one(client) -> None:
+    config.ENV_FILE.write_text("DISCORD_TOKEN=old\n", encoding="utf-8")
+    client.post("/api/settings", base_url=BASE_URL, json={"token": "", "calendar_id": "x"})
+    assert config.load_settings().discord_token == "old"
+
+
+def test_bad_channel_id_is_refused(client) -> None:
+    body = {"test": {"channel_id": "abc"}}
+    response = client.post("/api/settings", base_url=BASE_URL, json=body)
+    assert response.status_code == 400
+    assert "digits" in response.json["error"]
+
+
+def test_save_and_read_hosts(client) -> None:
+    hosts = [{"name": "Blackeye", "discord_id": "123456789012345678"}]
+    assert client.post("/api/hosts", base_url=BASE_URL, json={"hosts": hosts}).status_code == 200
+    assert client.get("/api/state", base_url=BASE_URL).json["hosts"] == hosts
+
+
+def test_bad_hosts_are_refused(client) -> None:
+    hosts = [{"name": "A, B", "discord_id": "12"}]
+    response = client.post("/api/hosts", base_url=BASE_URL, json={"hosts": hosts})
+    assert response.status_code == 400
+    assert "comma" in response.json["error"]
+    assert not config.HOSTS_FILE.exists()

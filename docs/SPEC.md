@@ -18,7 +18,7 @@ changes. Google Calendar is the source of truth.
 | **Schedule week** | Monday 5:00 AM to the next Monday 5:00 AM (Eastern). |
 | **Post time** | Sunday 9:00 PM Eastern. From this time, the next week is also posted. |
 | **Week messages** | The 3 bot messages for one schedule week. |
-| **Host list** | `hosts.csv`: short host name → Discord user ID. |
+| **Host list** | `data/hosts.csv`: short host name → Discord user ID. |
 
 ## Source events
 
@@ -116,5 +116,5 @@ No privileged intents.
 ## Failure behavior
 
 - Scheduled runs never open a browser. If Google sign-in is necessary, the run
-  logs an error and stops. Fix: run `python calendar_sync.py` by hand.
+  logs an error and stops. Fix: run `python bot.py --sign-in` by hand.
 - Errors go to `bot.log` in the project folder.

@@ -1,4 +1,4 @@
-from calendar_sync import format_event, to_event
+from tnio_bot.calendar_sync import format_event, to_event
 
 
 def test_to_event_timed() -> None:

@@ -8,8 +8,8 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 
-from config import EASTERN
-from hosts import host_text
+from tnio_bot.config import EASTERN
+from tnio_bot.hosts import host_text
 
 log = logging.getLogger(__name__)
 

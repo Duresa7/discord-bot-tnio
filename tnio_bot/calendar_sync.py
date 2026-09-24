@@ -3,9 +3,9 @@
 Google Calendar is the source of truth. Deleted events need no special
 handling: every run builds the schedule again from the current list of events.
 
-Sign in (or test the sign-in) with: python calendar_sync.py
+Sign in (or test the sign-in) with: python bot.py --sign-in
 
-The first run opens a browser for Google sign-in and makes ``token.json``.
+The first sign-in opens a browser and makes ``token.json``.
 Later runs use ``token.json``. Both ``credentials.json`` and ``token.json``
 stay local and are never committed.
 """
@@ -18,9 +18,9 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
-from config import CREDENTIALS_FILE, EASTERN, GOOGLE_SCOPES, TOKEN_FILE, load_settings
-from hosts import parse_host_names
-from schedule import Event
+from tnio_bot.config import CREDENTIALS_FILE, EASTERN, GOOGLE_SCOPES, TOKEN_FILE
+from tnio_bot.hosts import parse_host_names
+from tnio_bot.schedule import Event
 
 
 class SignInRequired(RuntimeError):
@@ -50,7 +50,7 @@ def get_credentials(interactive: bool = True) -> Credentials:
 
     if creds is None:
         if not interactive:
-            raise SignInRequired("Google sign-in is necessary. Run: python calendar_sync.py")
+            raise SignInRequired("Google sign-in is necessary. Run: python bot.py --sign-in")
         if not CREDENTIALS_FILE.exists():
             raise SystemExit(
                 f"{CREDENTIALS_FILE.name} not found. Download the OAuth client (Desktop app) "
@@ -132,14 +132,10 @@ def format_event(event: dict) -> str:
     return f"{day:%a %b} {day.day} (all day) - {title}"
 
 
-def main() -> None:
-    settings = load_settings()
-    events = list_upcoming_events(settings.google_calendar_id)
+def print_upcoming_events(calendar_id: str) -> None:
+    """Sign in if necessary (browser), then print the next 10 events."""
+    events = list_upcoming_events(calendar_id)
     if not events:
         print("No upcoming events.")
     for event in events:
         print(format_event(event))
-
-
-if __name__ == "__main__":
-    main()

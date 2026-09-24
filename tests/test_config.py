@@ -1,4 +1,4 @@
-from config import Settings
+from tnio_bot.config import Settings
 
 
 def test_defaults_when_env_is_empty() -> None:

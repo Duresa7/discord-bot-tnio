@@ -1,4 +1,4 @@
-from hosts import host_text, load_hosts, parse_host_names
+from tnio_bot.hosts import host_text, load_hosts, parse_host_names
 
 
 def test_plain_host_line() -> None:

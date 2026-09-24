@@ -2,8 +2,8 @@ from datetime import datetime
 
 import pytest
 
-from config import EASTERN
-from schedule import (
+from tnio_bot.config import EASTERN
+from tnio_bot.schedule import (
     MAX_MESSAGE_LENGTH,
     OVERFLOW_LINE,
     Event,

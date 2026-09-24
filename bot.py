@@ -4,6 +4,7 @@ Windows Task Scheduler runs this every 5 minutes. Each run syncs, then stops.
 
     python bot.py            sync the Discord messages
     python bot.py --preview  print the messages only (no Discord)
+    python bot.py --sign-in  sign in to Google (browser), then print the next 10 events
 """
 
 import argparse
@@ -13,19 +14,25 @@ import sys
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 
-from calendar_sync import fetch_week_events, get_credentials
-from config import EASTERN, HOSTS_FILE, LOG_FILE, load_settings
-from discord_sync import open_channel, sync_week
-from hosts import load_hosts
-from schedule import WeekMessages, active_weeks, build_week_messages, next_week_start
+from tnio_bot.calendar_sync import fetch_week_events, get_credentials, print_upcoming_events
+from tnio_bot.config import EASTERN, HOSTS_FILE, LOG_FILE, load_settings
+from tnio_bot.discord_sync import open_channel, sync_week
+from tnio_bot.hosts import load_hosts
+from tnio_bot.schedule import WeekMessages, active_weeks, build_week_messages, next_week_start
 
 log = logging.getLogger("bot")
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--preview", action="store_true", help="print the messages only")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--preview", action="store_true", help="print the messages only")
+    mode.add_argument("--sign-in", action="store_true", help="sign in to Google, print 10 events")
     args = parser.parse_args(argv)
+
+    if args.sign_in:
+        print_upcoming_events(load_settings().google_calendar_id)
+        return 0
 
     setup_logging()
     try:

@@ -9,9 +9,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-# All paths start from the project folder, because Task Scheduler does not
-# start the bot in that folder.
-BASE_DIR = Path(__file__).resolve().parent
+# All paths start from the project folder (one level above this package),
+# because Task Scheduler does not start the bot in that folder.
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Local files. Never commit them.
 ENV_FILE = BASE_DIR / ".env"
@@ -20,7 +20,7 @@ TOKEN_FILE = BASE_DIR / "token.json"
 LOG_FILE = BASE_DIR / "bot.log"
 
 # Committed: short host name -> Discord user ID.
-HOSTS_FILE = BASE_DIR / "hosts.csv"
+HOSTS_FILE = BASE_DIR / "data" / "hosts.csv"
 
 # Read-only access. The app never changes the calendar.
 GOOGLE_SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]

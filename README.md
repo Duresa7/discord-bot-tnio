@@ -29,7 +29,7 @@ copy .env.example .env
 
 1. Put `credentials.json` (the OAuth client, Desktop app type) in the project folder.
 2. In Google Cloud → Google Auth Platform → Audience, add the Google account as a test user.
-3. Run `python calendar_sync.py`. A browser opens. Sign in and allow read-only access.
+3. Run `python bot.py --sign-in`. A browser opens. Sign in and allow read-only access.
 
 This makes `token.json` and prints the next 10 events.
 
@@ -53,7 +53,7 @@ A calendar event can name its host(s) in the description:
 Host: Blackeye, Gonnmakh
 ```
 
-[hosts.csv](hosts.csv) changes each short name to a Discord user ID, so the bot
+[data/hosts.csv](data/hosts.csv) changes each short name to a Discord user ID, so the bot
 can show a clickable mention (the host gets no notification):
 
 ```
@@ -99,11 +99,28 @@ ruff check .
 ruff format .
 ```
 
-| File | Purpose |
-| --- | --- |
-| `bot.py` | Entry point: one sync run, or `--preview` |
-| `schedule.py` | Builds the 3 message texts (no network) |
-| `discord_sync.py` | Finds, posts, edits, and reposts the messages |
-| `calendar_sync.py` | Google sign-in and event reads |
-| `hosts.py` | `Host:` lines and `hosts.csv` |
-| `config.py` | Settings from `.env` |
+## Folder layout
+
+```
+discord-bot-tnio/
+├── bot.py                  # the only entry point: sync, --preview, --sign-in
+├── tnio_bot/               # application code
+│   ├── config.py           #   settings from .env, file paths
+│   ├── schedule.py         #   builds the 3 message texts (no network)
+│   ├── discord_sync.py     #   finds, posts, edits, and reposts the messages
+│   ├── calendar_sync.py    #   Google sign-in and event reads
+│   └── hosts.py            #   "Host:" lines and hosts.csv
+├── data/
+│   └── hosts.csv           # host name -> Discord user ID
+├── docs/
+│   └── SPEC.md             # the agreed design
+├── scripts/
+│   └── install_task.ps1    # registers the 5-minute scheduled task
+├── tests/                  # pytest tests, one file for each module
+├── .env.example            # copy to .env (local only)
+├── requirements.txt        # runtime libraries
+├── requirements-dev.txt    # + pytest and ruff
+└── pyproject.toml          # pytest and ruff settings
+```
+
+Local only (git ignores them): `.env`, `credentials.json`, `token.json`, `bot.log`, `.venv/`.

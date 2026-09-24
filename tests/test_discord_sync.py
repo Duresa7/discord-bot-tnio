@@ -1,9 +1,9 @@
 import asyncio
 from datetime import datetime
 
-from config import EASTERN
-from discord_sync import PostedMessage, sync_week
-from schedule import WeekMessages
+from tnio_bot.config import EASTERN
+from tnio_bot.discord_sync import PostedMessage, sync_week
+from tnio_bot.schedule import WeekMessages
 
 WEEK = datetime(2026, 9, 21, 5, tzinfo=EASTERN)
 MESSAGES = WeekMessages(

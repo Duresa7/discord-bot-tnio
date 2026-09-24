@@ -13,7 +13,7 @@ from typing import Protocol
 
 import discord
 
-from schedule import WeekMessages, post_time
+from tnio_bot.schedule import WeekMessages, post_time
 
 # Search for the week's messages from this long before its post time.
 SEARCH_MARGIN = timedelta(hours=1)

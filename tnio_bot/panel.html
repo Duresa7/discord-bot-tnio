@@ -177,6 +177,9 @@
     <label for="calendar">Google Calendar ID</label>
     <input id="calendar" type="text">
     <p class="muted">Google Calendar → Settings → (the calendar) → Integrate calendar → Calendar ID.</p>
+    <label for="contact">Contact person (a name from the host list)</label>
+    <input id="contact" type="text" placeholder="Rakkos">
+    <p class="muted">Shown at the end: “Please message @name if there are any questions or changes.” Empty = no contact line.</p>
     <button id="settings-save">Save settings</button>
   </section>
 
@@ -244,6 +247,7 @@ async function loadState() {
   }
   $("#token").placeholder = state.token_set ? "Set — type a new token only to replace it" : "Not set — paste the bot token here";
   if (document.activeElement !== $("#calendar")) $("#calendar").value = state.calendar_id;
+  if (document.activeElement !== $("#contact")) $("#contact").value = state.contact_host;
 }
 
 function renderStatus() {
@@ -394,7 +398,7 @@ $("#servers-save").onclick = (event) => busy(event.target, async () => {
 });
 
 $("#settings-save").onclick = (event) => busy(event.target, async () => {
-  await api("/api/settings", { token: $("#token").value, calendar_id: $("#calendar").value });
+  await api("/api/settings", { token: $("#token").value, calendar_id: $("#calendar").value, contact_host: $("#contact").value });
   $("#token").value = "";
   toast("Settings saved.");
   await loadState();

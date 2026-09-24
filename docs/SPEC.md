@@ -61,6 +61,18 @@ Each day:
 - Events are in start-time order. A line shows the start time only.
 - The title is copied exactly (tags such as `(F)` or `INQ:` come from the title).
 - A day with no events shows its heading and `- No events`.
+- One empty line after the header, two empty lines between days.
+
+Footer (end of message 3, after two empty lines):
+
+```
+<emoji> **ALL TIMES IN EST** <emoji>
+
+**Please message @Contact if there are any questions or changes. Thank you!**
+```
+
+The contact line shows only if `CONTACT_HOST` is set. It must be a name in the host
+list (the panel checks this). Its mention does not notify.
 
 ### Hosts
 
@@ -73,7 +85,7 @@ Each day:
 
 1. Build that message again without the host parts.
 2. If it is still too long, remove event lines from the end until it fits, and
-   add `- … more events: see the calendar`. Log a warning.
+   add `- … more events: see the calendar` (before the footer). Log a warning.
 
 ## Timing
 
@@ -107,6 +119,7 @@ Mentions never notify anyone on an edit or a repost.
 | `TEST_SCHEDULE_EMOJI`, `REAL_SCHEDULE_EMOJI` | Emoji around "ALL TIMES IN EST", for example `<:tnio:123>` |
 | `TEST_PING_EVERYONE`, `REAL_PING_EVERYONE` | `true` / `false` (default `false`) |
 | `GOOGLE_CALENDAR_ID` | Calendar to read (default `primary`) |
+| `CONTACT_HOST` | Host-list name for the footer contact line (empty = no line) |
 
 Values in `.env` win over the process environment, so a running panel always
 sees its own changes.
@@ -141,7 +154,7 @@ For the friend who runs the bot. No terminal.
 | Preview | The 3 messages of each active week, drawn like Discord (bold, bullets, mentions as blue names, custom emoji). |
 | Server | Test / Real switch, and channel ID, emoji, ping for each server. |
 | Hosts | Table to add, change, and remove hosts. Name: no commas, unique. ID: 15–20 digits. |
-| Settings | Calendar ID. Bot token: never shown, only "set" / "not set"; typing a new one replaces it. |
+| Settings | Calendar ID, contact person. Bot token: never shown, only "set" / "not set"; typing a new one replaces it. |
 | Update | `git pull --ff-only`, then `pip install -r requirements.txt`. Then the friend restarts the panel. |
 
 Security: the panel listens on `127.0.0.1` only and has no password. Every

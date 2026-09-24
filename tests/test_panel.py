@@ -13,7 +13,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "STATUS_FILE", tmp_path / "status.json")
     monkeypatch.setattr(panel, "sign_in_problem", lambda: None)
     monkeypatch.setattr(task, "is_on", lambda: False)
-    for key in ("DISCORD_TOKEN", "DISCORD_SERVER", "GOOGLE_CALENDAR_ID"):
+    for key in ("DISCORD_TOKEN", "DISCORD_SERVER", "GOOGLE_CALENDAR_ID", "CONTACT_HOST"):
         monkeypatch.delenv(key, raising=False)
     return panel.app.test_client()
 
@@ -72,6 +72,18 @@ def test_bad_channel_id_is_refused(client) -> None:
     response = client.post("/api/settings", base_url=BASE_URL, json=body)
     assert response.status_code == 400
     assert "digits" in response.json["error"]
+
+
+def test_contact_must_be_in_the_host_list(client) -> None:
+    body = {"contact_host": "Rakkos"}
+    response = client.post("/api/settings", base_url=BASE_URL, json=body)
+    assert response.status_code == 400
+    assert "not in the host list" in response.json["error"]
+
+    hosts = [{"name": "Rakkos", "discord_id": "123456789012345678"}]
+    client.post("/api/hosts", base_url=BASE_URL, json={"hosts": hosts})
+    assert client.post("/api/settings", base_url=BASE_URL, json=body).status_code == 200
+    assert config.load_settings().contact_host == "Rakkos"
 
 
 def test_save_and_read_hosts(client) -> None:

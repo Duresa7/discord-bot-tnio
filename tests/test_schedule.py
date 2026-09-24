@@ -124,18 +124,23 @@ def test_full_week_layout() -> None:
             "- 9:00 PM - Sith Academy - Vistenia",
             "- 12:00 AM - Force Pantheon (F) - Kaelis",
             "",
+            "",
             "**TUESDAY, SEPTEMBER 22ND**",
             "- No events",
         ]
     )
-    assert week.contents[1].startswith("**WEDNESDAY, SEPTEMBER 23RD**\n- No events\n")
+    assert week.contents[1].startswith("**WEDNESDAY, SEPTEMBER 23RD**\n- No events\n\n\n")
     assert week.contents[2] == "\n".join(
         [
             "**SATURDAY, SEPTEMBER 26TH**",
             "- 8:00 PM - Tournament",
             "",
+            "",
             "**SUNDAY, SEPTEMBER 27TH**",
             "- No events",
+            "",
+            "",
+            "<:tnio:9> **ALL TIMES IN EST** <:tnio:9>",
         ]
     )
     assert week.markers == (
@@ -161,7 +166,26 @@ def test_events_outside_the_week_are_ignored() -> None:
     text = "\n".join(week.contents)
     assert "Before" not in text
     assert "After" not in text
-    assert week.contents[2].endswith("**SUNDAY, SEPTEMBER 27TH**\n- 4:59 AM - Last")
+    assert "**SUNDAY, SEPTEMBER 27TH**\n- 4:59 AM - Last\n" in week.contents[2]
+
+
+def test_footer_with_contact() -> None:
+    week = build_week_messages(WEEK, [], {"rakkos": 42}, contact="Rakkos")
+    assert week.contents[2].endswith(
+        "- No events\n\n\n**ALL TIMES IN EST**\n\n"
+        "**Please message <@42> if there are any questions or changes. Thank you!**"
+    )
+
+
+def test_overflow_note_comes_before_the_footer() -> None:
+    saturday = [
+        Event(f"Event number {i:02d} " + "x" * 40, et(2026, 9, 26, 6 + i % 17, i % 60))
+        for i in range(60)
+    ]
+    content = build_week_messages(WEEK, saturday, {}, contact="Rakkos").contents[2]
+    assert len(content) <= MAX_MESSAGE_LENGTH
+    assert f"{OVERFLOW_LINE}\n\n\n**ALL TIMES IN EST**" in content
+    assert content.endswith("Thank you!**")
 
 
 def many_events(count: int) -> list[Event]:

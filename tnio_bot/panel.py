@@ -87,6 +87,7 @@ def state():
         },
         "token_set": bool(settings.discord_token),
         "calendar_id": settings.google_calendar_id,
+        "contact_host": settings.contact_host,
         "hosts": read_host_rows(config.HOSTS_FILE),
         "schedule_supported": task.supported(),
         "schedule_on": task.is_on(),
@@ -105,6 +106,12 @@ def save_settings():
         updates["DISCORD_SERVER"] = body["server"]
     if "calendar_id" in body:
         updates["GOOGLE_CALENDAR_ID"] = body["calendar_id"].strip()
+    if "contact_host" in body:
+        contact = body["contact_host"].strip()
+        known = {row["name"].casefold() for row in read_host_rows(config.HOSTS_FILE)}
+        if contact and contact.casefold() not in known:
+            raise PanelError(f"'{contact}' is not in the host list. Add the host first.")
+        updates["CONTACT_HOST"] = contact
     if body.get("token", "").strip():
         updates["DISCORD_TOKEN"] = body["token"].strip()
     for name in config.SERVERS:

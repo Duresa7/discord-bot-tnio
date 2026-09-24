@@ -45,7 +45,17 @@ def build_weeks(settings: config.Settings, creds, now: datetime | None = None) -
             creds, settings.google_calendar_id, start, next_week_start(start)
         )
         weeks.append(
-            (start, build_week_messages(start, events, hosts, server.emoji, server.ping_everyone))
+            (
+                start,
+                build_week_messages(
+                    start,
+                    events,
+                    hosts,
+                    server.emoji,
+                    server.ping_everyone,
+                    settings.contact_host,
+                ),
+            )
         )
     return weeks
 

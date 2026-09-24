@@ -20,6 +20,7 @@ OVERFLOW_LINE = "- … more events: see the calendar"
 
 # Days in each message, as offsets from Monday: Mon-Tue, Wed-Fri, Sat-Sun.
 DAY_GROUPS = ((0, 1), (2, 3, 4), (5, 6))
+DAY_GAP = ["", ""]  # two empty lines between days, as in the manual schedule
 
 WEEKDAYS = ("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY")
 MONTHS = (
@@ -112,9 +113,11 @@ def time_text(moment: datetime) -> str:
     return f"{hour}:{local.minute:02d} {'AM' if local.hour < 12 else 'PM'}"
 
 
+def time_zone_line(emoji: str) -> str:
+    return f"{emoji} **ALL TIMES IN EST** {emoji}" if emoji else "**ALL TIMES IN EST**"
+
+
 def header_lines(start: datetime, emoji: str, ping_everyone: bool) -> list[str]:
-    left = f"{emoji} " if emoji else ""
-    right = f" {emoji}" if emoji else ""
     lines = ["@everyone", ""] if ping_everyone else []
     return [
         *lines,
@@ -127,8 +130,19 @@ def header_lines(start: datetime, emoji: str, ping_everyone: bool) -> list[str]:
         "[A+] Apprentice and up",
         "[F] faction members only",
         "",
-        f"{left}**ALL TIMES IN EST**{right}",
+        time_zone_line(emoji),
     ]
+
+
+def footer_lines(emoji: str, contact: str, hosts: dict[str, int]) -> list[str]:
+    lines = [time_zone_line(emoji)]
+    if contact:
+        lines += [
+            "",
+            f"**Please message {host_text(contact, hosts)} if there are any questions "
+            "or changes. Thank you!**",
+        ]
+    return lines
 
 
 def event_line(event: Event, hosts: dict[str, int], with_hosts: bool = True) -> str:
@@ -147,6 +161,7 @@ def build_week_messages(
     hosts: dict[str, int],
     emoji: str = "",
     ping_everyone: bool = False,
+    contact: str = "",
 ) -> WeekMessages:
     end = next_week_start(start)
     days = [start.date() + timedelta(days=i) for i in range(7)]
@@ -158,48 +173,50 @@ def build_week_messages(
     _warn_unknown_hosts(by_day, hosts)
 
     markers, contents = [], []
+    last = len(DAY_GROUPS) - 1
     for index, group in enumerate(DAY_GROUPS):
         group_days = [days[offset] for offset in group]
-        if index == 0:
-            markers.append(week_title(start))
-            prefix = header_lines(start, emoji, ping_everyone)
-        else:
-            markers.append(day_heading(group_days[0]))
-            prefix = []
-        contents.append(_render(prefix, group_days, by_day, hosts))
+        markers.append(week_title(start) if index == 0 else day_heading(group_days[0]))
+        prefix = [*header_lines(start, emoji, ping_everyone), ""] if index == 0 else []
+        suffix = [*DAY_GAP, *footer_lines(emoji, contact, hosts)] if index == last else []
+        contents.append(_render(prefix, group_days, by_day, hosts, suffix))
     return WeekMessages(tuple(markers), tuple(contents))
 
 
 def _render(
-    prefix: list[str], days: list[date], by_day: dict[date, list[Event]], hosts: dict[str, int]
+    prefix: list[str],
+    days: list[date],
+    by_day: dict[date, list[Event]],
+    hosts: dict[str, int],
+    suffix: list[str],
 ) -> str:
     for with_hosts in (True, False):
-        lines, event_indexes = _lines(prefix, days, by_day, hosts, with_hosts)
-        text = "\n".join(lines)
+        body, event_indexes = _day_lines(days, by_day, hosts, with_hosts)
+        text = "\n".join([*prefix, *body, *suffix])
         if len(text) <= MAX_MESSAGE_LENGTH:
             if not with_hosts:
                 log.warning("Message for %s is too long: host names removed.", days[0])
             return text
 
     log.warning("Message for %s is too long: some events removed.", days[0])
-    while event_indexes and len("\n".join([*lines, OVERFLOW_LINE])) > MAX_MESSAGE_LENGTH:
+
+    def cut_text() -> str:
+        return "\n".join([*prefix, *body, OVERFLOW_LINE, *suffix])
+
+    while event_indexes and len(cut_text()) > MAX_MESSAGE_LENGTH:
         # Remove the last event line first, so the earlier indexes stay correct.
-        del lines[event_indexes.pop()]
-    return "\n".join([*lines, OVERFLOW_LINE])
+        del body[event_indexes.pop()]
+    return cut_text()
 
 
-def _lines(
-    prefix: list[str],
-    days: list[date],
-    by_day: dict[date, list[Event]],
-    hosts: dict[str, int],
-    with_hosts: bool,
+def _day_lines(
+    days: list[date], by_day: dict[date, list[Event]], hosts: dict[str, int], with_hosts: bool
 ) -> tuple[list[str], list[int]]:
-    lines = list(prefix)
+    lines: list[str] = []
     event_indexes = []
     for day in days:
         if lines:
-            lines.append("")
+            lines.extend(DAY_GAP)
         lines.append(day_heading(day))
         if not by_day[day]:
             lines.append("- No events")

@@ -45,6 +45,7 @@ class Settings:
     test: ServerSettings
     real: ServerSettings
     google_calendar_id: str
+    contact_host: str = ""  # host-list name for the footer line
 
     @property
     def active(self) -> ServerSettings:
@@ -60,6 +61,7 @@ class Settings:
             test=_server(env, "TEST"),
             real=_server(env, "REAL"),
             google_calendar_id=(env.get("GOOGLE_CALENDAR_ID") or "").strip() or "primary",
+            contact_host=(env.get("CONTACT_HOST") or "").strip(),
         )
 
 

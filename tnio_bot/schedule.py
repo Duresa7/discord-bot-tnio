@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 
 from tnio_bot.config import EASTERN
-from tnio_bot.hosts import host_text
+from tnio_bot.hosts import host_text, mention_title_names, title_names
 
 log = logging.getLogger(__name__)
 
@@ -144,7 +144,9 @@ def footer_lines(emoji: str, contact: str, hosts: dict[str, int]) -> list[str]:
 
 
 def event_line(event: Event, hosts: dict[str, int], with_hosts: bool = True) -> str:
-    line = f"- {time_text(event.start)} - {event.title}"
+    """One event line. With ``with_hosts=False`` (overflow), no mentions and no Host: part."""
+    title = mention_title_names(event.title, hosts) if with_hosts else event.title
+    line = f"- {time_text(event.start)} - {title}"
     if with_hosts and event.hosts:
         line += " - " + " ".join(host_text(name, hosts) for name in event.hosts)
     return line
@@ -230,8 +232,8 @@ def _warn_unknown_hosts(by_day: dict[date, list[Event]], hosts: dict[str, int]) 
         name
         for events in by_day.values()
         for event in events
-        for name in event.hosts
+        for name in [*event.hosts, *title_names(event.title)]
         if name.casefold() not in hosts
     }
     for name in sorted(unknown):
-        log.warning("Host %r is not in hosts.csv: shown as plain text.", name)
+        log.warning("Host %r is not a server member or in hosts.csv: plain text.", name)

@@ -9,10 +9,11 @@ The friend normally uses the control panel instead ("Start Control Panel.bat").
 """
 
 import argparse
+import asyncio
 
 from tnio_bot.calendar_sync import get_credentials, print_upcoming_events
 from tnio_bot.config import load_settings
-from tnio_bot.sync import build_weeks, run_once, setup_logging
+from tnio_bot.sync import preview_weeks, run_once, setup_logging
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -28,7 +29,11 @@ def main(argv: list[str] | None = None) -> int:
 
     setup_logging()
     if args.preview:
-        for start, messages in build_weeks(load_settings(), get_credentials(interactive=True)):
+        creds = get_credentials(interactive=True)
+        weeks, _, note = asyncio.run(preview_weeks(load_settings(), creds))
+        if note:
+            print(f"Note: {note}")
+        for start, messages in weeks:
             for number, content in enumerate(messages.contents, start=1):
                 print(f"===== Week of {start:%Y-%m-%d}, message {number} ({len(content)} chars)")
                 print(content)

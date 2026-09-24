@@ -21,8 +21,8 @@ from tnio_bot.calendar_sync import (
     fetch_week_events,
     get_credentials,
 )
-from tnio_bot.discord_sync import open_channel, sync_week
-from tnio_bot.hosts import load_hosts
+from tnio_bot.discord_sync import DiscordChannel, open_channel, sync_week
+from tnio_bot.hosts import MemberInfo, load_hosts, member_name_map
 from tnio_bot.schedule import WeekMessages, active_weeks, build_week_messages, next_week_start
 from tnio_bot.status import SyncBusy, sync_lock, write_status
 
@@ -30,14 +30,28 @@ log = logging.getLogger(__name__)
 
 Week = tuple[datetime, WeekMessages]
 
+MEMBERS_INTENT_HELP = (
+    "@names show as plain text. Turn on 'Server Members Intent' on the Bot page of "
+    "the Discord Developer Portal."
+)
+
 
 class MissingSetting(RuntimeError):
     """A setting that the sync needs is empty."""
 
 
-def build_weeks(settings: config.Settings, creds, now: datetime | None = None) -> list[Week]:
-    """Return the message texts of each active week."""
-    hosts = load_hosts(config.HOSTS_FILE)
+def build_weeks(
+    settings: config.Settings,
+    creds,
+    now: datetime | None = None,
+    members: list[MemberInfo] | None = None,
+) -> list[Week]:
+    """Return the message texts of each active week.
+
+    ``members`` (the server's member list) turns ``@name`` into mentions;
+    ``data/hosts.csv`` entries win over member names.
+    """
+    hosts = {**member_name_map(members or []), **load_hosts(config.HOSTS_FILE)}
     server = settings.active
     weeks = []
     for start in active_weeks(now or datetime.now(config.EASTERN)):
@@ -60,8 +74,8 @@ def build_weeks(settings: config.Settings, creds, now: datetime | None = None) -
     return weeks
 
 
-async def sync_discord(settings: config.Settings, weeks: list[Week]) -> list[str]:
-    """Make the active server's channel show ``weeks``. Return one result line for each week."""
+async def sync_discord(settings: config.Settings, creds) -> list[str]:
+    """Make the active server's channel show the active weeks. Return the result lines."""
     server = settings.active
     if not settings.discord_token or not server.channel_id:
         raise MissingSetting(
@@ -69,11 +83,42 @@ async def sync_discord(settings: config.Settings, weeks: list[Week]) -> list[str
         )
     results = []
     async with open_channel(settings.discord_token, server.channel_id) as channel:
-        for start, messages in weeks:
+        members, note = await fetch_members(channel)
+        for start, messages in build_weeks(settings, creds, members=members):
             result = await sync_week(channel, start, messages, server.ping_everyone)
             results.append(f"Week of {start:%b %d}: {result}")
             log.log(logging.DEBUG if result == "no changes" else logging.INFO, results[-1])
+    if note:
+        results.append(f"Note: {note}")
     return results
+
+
+async def preview_weeks(
+    settings: config.Settings, creds
+) -> tuple[list[Week], list[MemberInfo], str | None]:
+    """Build the active weeks for a preview. Read the member list if Discord is set up."""
+    members, note = [], None
+    if settings.discord_token and settings.active.channel_id:
+        try:
+            async with open_channel(settings.discord_token, settings.active.channel_id) as channel:
+                members, note = await fetch_members(channel)
+        except Exception as error:
+            note = f"@names show as plain text: {friendly_error(error)}"
+    else:
+        note = "Set the bot token and the channel ID to show @names as blue mentions."
+    return build_weeks(settings, creds, members=members), members, note
+
+
+async def fetch_members(channel: DiscordChannel) -> tuple[list[MemberInfo], str | None]:
+    """Return the server's members, or no members and a note that explains why."""
+    try:
+        return await channel.members(), None
+    except discord.Forbidden:
+        log.warning("Member list not available: Server Members Intent is off.")
+        return [], MEMBERS_INTENT_HELP
+    except Exception as error:
+        log.warning("Member list not available: %s", error)
+        return [], f"@names show as plain text: {friendly_error(error)}"
 
 
 def run_once() -> dict:
@@ -84,8 +129,7 @@ def run_once() -> dict:
     settings = config.load_settings()
     try:
         with sync_lock(config.LOCK_FILE):
-            weeks = build_weeks(settings, get_credentials(interactive=False))
-            results = asyncio.run(sync_discord(settings, weeks))
+            results = asyncio.run(sync_discord(settings, get_credentials(interactive=False)))
     except SyncBusy as error:
         log.info("%s", error)
         return {"ok": False, "skipped": True, "error": str(error)}

@@ -109,12 +109,13 @@
   </section>
 
   <section class="card">
-    <h2>Bot schedule</h2>
+    <h2>Automatic run</h2>
     <div class="toggle">
       <span id="schedule-dot" class="dot"></span>
       <span id="schedule-text">…</span>
     </div>
-    <p class="muted">When it is on, Windows runs the bot every 5 minutes, even when this panel is closed.</p>
+    <p class="muted">When it is on, Windows runs the bot every 5 minutes and 1 minute after each sign-in.
+      It stays on after a restart, and it works when this panel is closed. Turn it off here at any time.</p>
     <div class="row">
       <button id="schedule-btn" class="secondary">Turn on</button>
       <button id="sync-btn">Sync now</button>
@@ -158,8 +159,10 @@
 
   <section class="card wide">
     <h2>Hosts</h2>
-    <p class="muted">In a calendar event, write <code>Host: Name</code> in the description (several: <code>Host: Name1, Name2</code>).
-      A name in this list shows as a clickable @mention. User ID: Developer Mode → right-click the user → “Copy User ID”.</p>
+    <p class="muted">You usually do not need this list. When an event title contains a Discord name, for example
+      <code>Intel Training - @ravenblack18102</code>, the bot finds that member by itself and shows a blue @mention.
+      Add a row here only for a name that the bot cannot find (for example a typo that people often use).
+      User ID: Developer Mode → right-click the user → “Copy User ID”.</p>
     <table>
       <thead><tr><th>Name in the calendar</th><th>Discord user ID</th><th></th></tr></thead>
       <tbody id="hosts-body"></tbody>
@@ -269,7 +272,7 @@ function renderStatus() {
   const on = state.schedule_on;
   $("#schedule-dot").className = on ? "dot on" : "dot";
   $("#schedule-text").textContent = !state.schedule_supported ? "Works on Windows only."
-    : on ? "On — the bot runs every 5 minutes." : "Off — the bot does not run by itself.";
+    : on ? "On — the bot runs by itself, also after a restart." : "Off — the bot does not run by itself.";
   $("#schedule-btn").textContent = on ? "Turn off" : "Turn on";
   $("#schedule-btn").disabled = !state.schedule_supported;
 }
@@ -321,7 +324,8 @@ async function loadPreview() {
   box.innerHTML = '<span class="muted">Reading the calendar…</span>';
   try {
     const data = await api("/api/preview");
-    box.innerHTML = data.weeks.map((week) => `<div class="week-title">${escapeHtml(week.title)}</div>`
+    const note = data.note ? `<div class="error-box">⚠️ ${escapeHtml(data.note)}</div>` : "";
+    box.innerHTML = note + data.weeks.map((week) => `<div class="week-title">${escapeHtml(week.title)}</div>`
       + week.messages.map((content) => `
         <div class="msg">
           <div class="avatar">📅</div>
@@ -417,7 +421,7 @@ $("#sync-btn").onclick = (event) => busy(event.target, async () => {
 
 $("#schedule-btn").onclick = (event) => busy(event.target, async () => {
   const data = await api("/api/schedule", { on: !state.schedule_on });
-  toast(data.schedule_on ? "The schedule is on. The bot runs every 5 minutes." : "The schedule is off.");
+  toast(data.schedule_on ? "Automatic run is on, also after a restart." : "Automatic run is off.");
   await loadState();
 });
 

@@ -28,7 +28,7 @@ In the control panel:
 3. **Discord server:** type the test channel ID. Click **Save server settings**.
 4. **Hosts:** add each host's name and Discord user ID.
 5. Look at the **Preview**. If it is correct, click **Sync now**.
-6. **Bot schedule:** click **Turn on**. The bot now runs every 5 minutes, also when the panel is closed.
+6. **Automatic run:** click **Turn on**. The bot now runs every 5 minutes and after each Windows sign-in, also after a restart and when the panel is closed. Click **Turn off** to stop it.
 7. When the test works, switch **Discord server** to **Real server**.
 
 To get a new version later, click **Update the bot**, then start the panel again.
@@ -47,22 +47,26 @@ To get a new version later, click **Update the bot**, then start the panel again
 ### Discord
 
 1. In the [Discord Developer Portal](https://discord.com/developers/applications), make an application. On the **Bot** page, copy the token.
-2. Invite the bot to the test server and the real server with these permissions: **View Channel**, **Send Messages**, **Read Message History**, **Mention Everyone**. No privileged intents are necessary.
-3. In Discord, turn on Developer Mode. Right-click the schedule channel → **Copy Channel ID**.
-4. Emoji code (optional): type `\:name:` in Discord and copy the result, for example `<:tnio:123456789012345678>`.
+2. On the **Bot** page, turn on **Server Members Intent** (so `@name` in event titles becomes a blue mention). Click **Save Changes**.
+3. Invite the bot to the test server and the real server with these permissions: **View Channel**, **Send Messages**, **Read Message History**, **Mention Everyone**.
+4. In Discord, turn on Developer Mode. Right-click the schedule channel → **Copy Channel ID**.
+5. Emoji code (optional): type `\:name:` in Discord and copy the result, for example `<:tnio:123456789012345678>`.
 
 ## Hosts
 
-A calendar event can name its host(s) in the description:
+Write the host's Discord name after `@` in the event title, as usual:
 
 ```
-Host: Blackeye, Gonnmakh
+Intel Training - @ravenblack18102
 ```
 
-The host list (panel → **Hosts**, saved in the local file `data/hosts.csv`)
-changes each name to a Discord user ID, so the bot can show a clickable
-mention. The host gets no notification. A name that is not in the list shows
-as plain text.
+The bot finds that member in the server (username, display name, or server
+nickname) and shows a blue, clickable mention. The host gets no notification.
+A name that the bot cannot find shows as plain text.
+
+The panel's **Hosts** list (local file `data/hosts.csv`) is optional: use it
+for a name that the bot cannot find. A `Host: Name1, Name2` line in the event
+description also works.
 
 ## Command line (optional)
 

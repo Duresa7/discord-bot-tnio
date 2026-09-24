@@ -79,10 +79,19 @@ list (the panel checks this). Its mention does not notify.
 
 ### Hosts
 
-- The event description has a line `Host: Blackeye, Gonnmakh` (comma list; `Hosts:` also works; case does not matter).
-- A name in the host list becomes a mention `<@id>`. The mention does not notify the user.
-- A name not in the list shows as plain text, and the bot logs a warning.
-- No `Host:` line = no host part on the line.
+- Main form (what the calendar editors already type): `@name` in the event
+  title, for example `Intel Training - @ravenblack18102`. The bot changes each
+  known `@name` to a mention in the same place. `@everyone` and `@here` stay text.
+- Other form: a line `Host: Blackeye, Gonnmakh` in the description (comma list;
+  `Hosts:` also works). The mentions go at the end of the line.
+- Names map (case does not matter), from the server's member list, read on each run:
+  username (unique, always wins), display name, and server nickname. A display
+  name or nickname that two members share is left out. `data/hosts.csv` entries
+  win over member names (for names that do not match any member).
+- A mention does not notify the user.
+- An unknown name stays as plain text, and the bot logs a warning.
+- The member list needs the **Server Members Intent**. Without it, the bot still
+  posts, the names stay plain text, and the Status box shows how to turn it on.
 
 ### Overflow (a message over 2,000 characters)
 
@@ -92,7 +101,11 @@ list (the panel checks this). Its mention does not notify.
 
 ## Timing
 
-- Windows Task Scheduler starts `bot.py` every 5 minutes. Each run syncs and then stops.
+- Windows Task Scheduler starts `bot.py` every 5 minutes, and 1 minute after each
+  Windows sign-in of the friend. Each run syncs and then stops. The task stays on
+  after a restart. It runs only while the friend is signed in (no password stored).
+  If Windows refuses the sign-in trigger without admin rights, the task keeps only
+  the 5-minute trigger.
 - Active weeks at run time:
   - the current schedule week, always;
   - the next schedule week, from the post time (Sunday 9:00 PM).
@@ -130,7 +143,7 @@ sees its own changes.
 ## Discord permissions
 
 View Channel, Send Messages, Read Message History, Mention Everyone.
-No privileged intents.
+Privileged intent: **Server Members Intent** (Developer Portal → Bot), for `@name` lookup only.
 
 ## Failure behavior
 
@@ -153,7 +166,7 @@ For the friend who runs the bot. No terminal.
 | Section | Behavior |
 | --- | --- |
 | Status | Last run time, server, result for each week, error. Refreshes every 30 s. A banner and a button show when Google sign-in is necessary. |
-| Schedule | On/Off for the Task Scheduler task. **Sync now** (on `real`, asks for confirmation first). |
+| Automatic run | On/Off for the Task Scheduler task (5 minutes + sign-in; stays on after a restart). **Sync now** (on `real`, asks for confirmation first). |
 | Preview | The 3 messages of each active week, drawn like Discord (bold, bullets, mentions as blue names, custom emoji). |
 | Server | Test / Real switch, and channel ID, emoji, ping for each server. |
 | Hosts | Table to add, change, and remove hosts. Name: no commas, unique. ID: 15–20 digits. |

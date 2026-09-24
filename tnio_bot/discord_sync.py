@@ -2,7 +2,9 @@
 
 ``sync_week`` holds the rules (edit, post, or repost). ``DiscordChannel`` is the
 only code that talks to Discord. The bot uses the REST API only: it logs in,
-does its work, and closes. It needs no gateway connection and no privileged intents.
+does its work, and closes. It needs no gateway connection. The member list
+(for @name mentions) needs the "Server Members Intent" switch in the
+Developer Portal.
 """
 
 from collections.abc import AsyncIterator
@@ -13,6 +15,7 @@ from typing import Protocol
 
 import discord
 
+from tnio_bot.hosts import MemberInfo
 from tnio_bot.schedule import WeekMessages, post_time
 
 # Search for the week's messages from this long before its post time.
@@ -90,11 +93,20 @@ class DiscordChannel:
     async def delete(self, message_id: int) -> None:
         await self._channel.get_partial_message(message_id).delete()
 
+    async def members(self) -> list[MemberInfo]:
+        """Return the members of the channel's server. Needs the Server Members Intent."""
+        return [
+            MemberInfo(member.id, member.name, member.global_name, member.nick)
+            async for member in self._channel.guild.fetch_members(limit=None)
+        ]
+
 
 @asynccontextmanager
 async def open_channel(token: str, channel_id: int) -> AsyncIterator[DiscordChannel]:
     discord.VoiceClient.warn_nacl = False  # no voice: hide the PyNaCl warning
-    client = discord.Client(intents=discord.Intents.none())
+    intents = discord.Intents.none()
+    intents.members = True  # for fetch_members over REST; no gateway connection is made
+    client = discord.Client(intents=intents)
     await client.login(token)
     try:
         channel = await client.fetch_channel(channel_id)

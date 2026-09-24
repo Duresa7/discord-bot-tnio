@@ -4,6 +4,7 @@ Start: double-click "Start Control Panel.bat" (or: python -m tnio_bot.panel).
 It listens on 127.0.0.1 only. See docs/SPEC.md, "Control panel".
 """
 
+import asyncio
 import functools
 import logging
 import shutil
@@ -21,7 +22,7 @@ from tnio_bot import config, task
 from tnio_bot.calendar_sync import MissingCredentials, get_credentials, sign_in_problem
 from tnio_bot.hosts import host_row_errors, read_host_rows, write_host_rows
 from tnio_bot.status import read_status
-from tnio_bot.sync import build_weeks, friendly_error, run_once, setup_logging
+from tnio_bot.sync import friendly_error, preview_weeks, run_once, setup_logging
 
 PORT = 8765
 URL = f"http://localhost:{PORT}"
@@ -147,10 +148,14 @@ def save_hosts():
 @api
 def preview():
     settings = config.load_settings()
-    weeks = build_weeks(settings, get_credentials(interactive=False))
+    weeks, members, note = asyncio.run(preview_weeks(settings, get_credentials(interactive=False)))
+    # Names for the blue mentions in the preview: the server name, else the host-list name.
+    names = {row["discord_id"]: row["name"] for row in read_host_rows(config.HOSTS_FILE)}
+    names.update({str(member.id): member.display for member in members})
     return {
         "server": settings.server,
-        "names": {row["discord_id"]: row["name"] for row in read_host_rows(config.HOSTS_FILE)},
+        "note": note,
+        "names": names,
         "weeks": [
             {"title": f"Week of {start:%B} {start.day}", "messages": list(messages.contents)}
             for start, messages in weeks

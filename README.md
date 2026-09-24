@@ -38,6 +38,14 @@ These files stay on your computer only. `.gitignore` blocks them. Never commit t
 The Google account that signs in decides which calendar the bot reads.
 Access is read-only (`calendar.readonly`).
 
+## Test the Google sign-in
+
+1. Put `credentials.json` in the project folder.
+2. In Google Cloud → Google Auth Platform → Audience, add the Google account as a test user.
+3. Run `python calendar_sync.py`. A browser opens. Sign in and allow access.
+
+The script makes `token.json` and prints your next 10 events. Later runs do not open the browser.
+
 ## Development
 
 ```powershell

@@ -80,7 +80,8 @@ async def sync_discord(settings: config.Settings, creds) -> list[str]:
     server = settings.active
     if not settings.discord_token or not server.channel_id:
         raise MissingSetting(
-            f"Set the bot token and the {settings.server} server's channel ID in the settings."
+            f"Set the bot token and the {settings.server} server's channel ID "
+            "(Connections and Posting tabs)."
         )
     results = []
     async with open_channel(settings.discord_token, server.channel_id) as channel:
@@ -155,7 +156,7 @@ def friendly_error(error: BaseException) -> str:
     if isinstance(error, MissingCredentials | MissingSetting):
         return str(error)
     if isinstance(error, discord.LoginFailure):
-        return "Discord did not accept the bot token. Paste a new token in Settings."
+        return "Discord did not accept the bot token. Paste a new token in the Connections tab."
     if isinstance(error, discord.Forbidden):
         return (
             "The bot has no permission in the schedule channel. It needs: View Channel, "

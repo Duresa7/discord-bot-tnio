@@ -34,13 +34,13 @@ def sync(channel: FakeChannel, ping_everyone: bool = True) -> str:
     return asyncio.run(sync_week(channel, WEEK, MESSAGES, ping_everyone))
 
 
-def test_new_week_posts_three_and_pings_once() -> None:
+def test_new_week_posts_three_and_each_pings() -> None:
     channel = FakeChannel(["old week message"])
     assert sync(channel) == "posted"
     assert channel.calls == [
         ("send", "TITLE mon tue", True),
-        ("send", "WED thu fri", False),
-        ("send", "SAT sun", False),
+        ("send", "WED thu fri", True),
+        ("send", "SAT sun", True),
     ]
 
 

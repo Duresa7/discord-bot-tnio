@@ -31,9 +31,12 @@ changes. Google Calendar is the source of truth.
 
 | Message | Contents |
 | --- | --- |
-| 1 | `@everyone` line (only if the active server's ping setting is on), header, Monday, Tuesday |
+| 1 | header, Monday, Tuesday |
 | 2 | Wednesday, Thursday, Friday |
-| 3 | Saturday, Sunday |
+| 3 | Saturday, Sunday, footer |
+
+If the active server's ping setting is on, each of the 3 messages starts with an
+`@everyone` line (changed 2026-09-24 at the owner's request: 3 pings per new week).
 
 Header (same text as the manual schedule; `<emoji>` is the active server's emoji, empty = none):
 
@@ -104,7 +107,7 @@ week title, messages 2 and 3 by their first day heading.
 | Found | Action |
 | --- | --- |
 | All 3 | Edit each message whose text changed. No change = no API call. |
-| None | Post all 3. Message 1 pings `@everyone` if the active server's ping setting is on. |
+| None | Post all 3. Each message pings `@everyone` if the active server's ping setting is on. |
 | 1 or 2 (somebody deleted one) | Delete the ones found, then post all 3 again. No `@everyone` ping. |
 
 Mentions never notify anyone on an edit or a repost.

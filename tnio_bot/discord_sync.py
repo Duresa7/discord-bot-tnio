@@ -56,9 +56,9 @@ async def sync_week(
     for message in found:
         if message:
             await channel.delete(message.id)
-    for index, content in enumerate(week.contents):
-        # Ping @everyone only on a new week, never on a repost.
-        await channel.send(content, ping_everyone=ping_everyone and index == 0 and not reposted)
+    for content in week.contents:
+        # Each message pings @everyone on a new week, never on a repost.
+        await channel.send(content, ping_everyone=ping_everyone and not reposted)
     return "reposted (a message was deleted)" if reposted else "posted"
 
 

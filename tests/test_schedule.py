@@ -129,9 +129,13 @@ def test_full_week_layout() -> None:
             "- No events",
         ]
     )
-    assert week.contents[1].startswith("**WEDNESDAY, SEPTEMBER 23RD**\n- No events\n\n\n")
+    assert week.contents[1].startswith(
+        "@everyone\n\n**WEDNESDAY, SEPTEMBER 23RD**\n- No events\n\n\n"
+    )
     assert week.contents[2] == "\n".join(
         [
+            "@everyone",
+            "",
             "**SATURDAY, SEPTEMBER 26TH**",
             "- 8:00 PM - Tournament",
             "",
@@ -151,9 +155,12 @@ def test_full_week_layout() -> None:
 
 
 def test_no_ping_no_emoji() -> None:
-    first = build_week_messages(WEEK, [], {}).contents[0]
-    assert first.startswith("**EVENT SCHEDULE")
-    assert "\n**ALL TIMES IN EST**\n" in first
+    week = build_week_messages(WEEK, [], {})
+    assert week.contents[0].startswith("**EVENT SCHEDULE")
+    assert week.contents[1].startswith("**WEDNESDAY")
+    assert week.contents[2].startswith("**SATURDAY")
+    assert "@everyone" not in "".join(week.contents)
+    assert "\n**ALL TIMES IN EST**\n" in week.contents[0]
 
 
 def test_events_outside_the_week_are_ignored() -> None:

@@ -117,10 +117,8 @@ def time_zone_line(emoji: str) -> str:
     return f"{emoji} **ALL TIMES IN EST** {emoji}" if emoji else "**ALL TIMES IN EST**"
 
 
-def header_lines(start: datetime, emoji: str, ping_everyone: bool) -> list[str]:
-    lines = ["@everyone", ""] if ping_everyone else []
+def header_lines(start: datetime, emoji: str) -> list[str]:
     return [
-        *lines,
         week_title(start),
         "[ LATE NIGHT EVENTS APPEAR ON PRIOR DATE ]",
         "",
@@ -174,10 +172,11 @@ def build_week_messages(
 
     markers, contents = [], []
     last = len(DAY_GROUPS) - 1
+    ping = ["@everyone", ""] if ping_everyone else []  # at the top of every message
     for index, group in enumerate(DAY_GROUPS):
         group_days = [days[offset] for offset in group]
         markers.append(week_title(start) if index == 0 else day_heading(group_days[0]))
-        prefix = [*header_lines(start, emoji, ping_everyone), ""] if index == 0 else []
+        prefix = [*ping, *header_lines(start, emoji), ""] if index == 0 else ping
         suffix = [*DAY_GAP, *footer_lines(emoji, contact, hosts)] if index == last else []
         contents.append(_render(prefix, group_days, by_day, hosts, suffix))
     return WeekMessages(tuple(markers), tuple(contents))

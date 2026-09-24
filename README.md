@@ -1,40 +1,63 @@
 # discord-bot-tnio
 
-A Python application that reads events from Google Calendar and keeps a
-Discord schedule message synchronized with those events.
+A Discord bot that keeps one schedule message synchronized with a Google
+Calendar. Google Calendar is the source of truth: the bot reads the upcoming
+events every few minutes and edits the same Discord message.
 
 > **Status:** scaffold only. The bot does not do anything yet.
 
-## Requirements
-
-- [uv](https://docs.astral.sh/uv/)
-- Python 3.13 (uv installs it if it is missing)
-
-## Setup
-
-```bash
-uv sync
-cp .env.example .env
+```
+Google Calendar → Google Calendar API → Python app (Windows PC) → Discord Bot API → schedule message
 ```
 
-Put your own values in `.env`. Git ignores `.env` and Google credential files.
+## Setup (Windows)
+
+Install Python 3.11 or later from [python.org](https://www.python.org/downloads/).
+Then, in the project folder:
+
+```powershell
+py -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env
+python bot.py
+```
+
+Put your own values in `.env`.
+
+## Secret files
+
+These files stay on your computer only. `.gitignore` blocks them. Never commit them.
+
+| File | What it is |
+| --- | --- |
+| `.env` | Discord token, channel ID, message ID, calendar ID |
+| `credentials.json` | Google OAuth client (Desktop app), downloaded from Google Cloud |
+| `token.json` | Made on the first Google sign-in |
+
+The Google account that signs in decides which calendar the bot reads.
+Access is read-only (`calendar.readonly`).
 
 ## Development
 
-```bash
-uv run pytest            # run tests
-uv run ruff check .      # lint
-uv run ruff format .     # format
-uv run python -m discord_bot
+```powershell
+pip install -r requirements-dev.txt
+pytest
+ruff check .
+ruff format .
 ```
 
-## Layout
+## Files
 
-```
-src/discord_bot/
-├── __main__.py        # python -m discord_bot
-├── bot.py             # entry point (placeholder)
-├── calendar_sync.py   # Google Calendar sync (placeholder)
-└── config.py          # settings from environment variables
-tests/
-```
+| File | Purpose |
+| --- | --- |
+| `bot.py` | Entry point (placeholder) |
+| `calendar_sync.py` | Google Calendar sync (placeholder) |
+| `config.py` | Settings from environment variables |
+| `tests/` | pytest tests |
+
+## Roadmap
+
+1. Repository and scaffold (done)
+2. Sign in to Google on the Windows PC and print upcoming events
+3. Connect Discord and keep the schedule message synchronized

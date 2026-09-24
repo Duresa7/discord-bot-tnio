@@ -21,6 +21,7 @@ htmlcov/
 # Secrets
 .env
 credentials*.json
+client_secret*.json
 token*.json
 service-account*.json
 

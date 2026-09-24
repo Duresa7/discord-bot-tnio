@@ -1,25 +1,19 @@
-from pathlib import Path
-
-from discord_bot import __version__
-from discord_bot.bot import main
-from discord_bot.config import Settings
-
-
-def test_version() -> None:
-    assert __version__ == "0.1.0"
+from bot import main
+from config import Settings
 
 
 def test_main_returns_zero() -> None:
     assert main() == 0
 
 
-def test_settings_from_env() -> None:
-    settings = Settings.from_env(
-        {
-            "DISCORD_TOKEN": "token",
-            "DISCORD_CHANNEL_ID": "123",
-            "GOOGLE_CALENDAR_ID": "calendar@example.com",
-        }
-    )
+def test_settings_defaults_when_env_is_empty() -> None:
+    settings = Settings.from_env({})
+    assert settings.discord_token is None
+    assert settings.discord_message_id is None
+    assert settings.google_calendar_id == "primary"
+
+
+def test_settings_reads_ids_as_int() -> None:
+    settings = Settings.from_env({"DISCORD_CHANNEL_ID": "123", "DISCORD_MESSAGE_ID": "456"})
     assert settings.discord_channel_id == 123
-    assert settings.google_credentials_file == Path("credentials.json")
+    assert settings.discord_message_id == 456

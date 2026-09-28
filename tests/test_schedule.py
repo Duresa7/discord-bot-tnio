@@ -2,7 +2,7 @@ from datetime import datetime
 
 import pytest
 
-from tnio_bot.config import EASTERN
+from tnio_bot.config import EASTERN, default_footer
 from tnio_bot.schedule import (
     MAX_MESSAGE_LENGTH,
     OVERFLOW_LINE,
@@ -176,12 +176,29 @@ def test_events_outside_the_week_are_ignored() -> None:
     assert "**SUNDAY, SEPTEMBER 27TH**\n- 4:59 AM - Last\n" in week.contents[2]
 
 
+CONTACT_FOOTER = default_footer("Rakkos")
+
+
 def test_footer_with_contact() -> None:
-    week = build_week_messages(WEEK, [], {"rakkos": 42}, contact="Rakkos")
+    week = build_week_messages(WEEK, [], {"rakkos": 42}, footer=CONTACT_FOOTER)
     assert week.contents[2].endswith(
         "- No events\n\n\n**ALL TIMES IN EST**\n\n"
         "**Please message <@42> if there are any questions or changes. Thank you!**"
     )
+
+
+def test_custom_footer_fills_in_emoji_and_mentions() -> None:
+    footer = "{emoji} **ALL TIMES IN EST** {emoji}\n\nAsk @Rakkos or @unknown.\nBye @everyone"
+    week = build_week_messages(WEEK, [], {"rakkos": 42}, emoji="<:tnio:9>", footer=footer)
+    assert week.contents[2].endswith(
+        "- No events\n\n\n<:tnio:9> **ALL TIMES IN EST** <:tnio:9>\n\n"
+        "Ask <@42> or @unknown.\nBye @everyone"
+    )
+
+
+def test_empty_footer_ends_with_the_last_day() -> None:
+    week = build_week_messages(WEEK, [], {}, footer=" \n\n ")
+    assert week.contents[2].endswith("**SUNDAY, SEPTEMBER 27TH**\n- No events")
 
 
 def test_overflow_note_comes_before_the_footer() -> None:
@@ -189,7 +206,7 @@ def test_overflow_note_comes_before_the_footer() -> None:
         Event(f"Event number {i:02d} " + "x" * 40, et(2026, 9, 26, 6 + i % 17, i % 60))
         for i in range(60)
     ]
-    content = build_week_messages(WEEK, saturday, {}, contact="Rakkos").contents[2]
+    content = build_week_messages(WEEK, saturday, {}, footer=CONTACT_FOOTER).contents[2]
     assert len(content) <= MAX_MESSAGE_LENGTH
     assert f"{OVERFLOW_LINE}\n\n\n**ALL TIMES IN EST**" in content
     assert content.endswith("Thank you!**")

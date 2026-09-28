@@ -66,16 +66,27 @@ Each day:
 - A day with no events shows its heading and `- No events`.
 - One empty line after the header, two empty lines between days.
 
-Footer (end of message 3, after two empty lines):
+Footer (end of message 3, after two empty lines): free text from the panel
+(changed 2026-09-28 at the owner's request), kept in `data/footer.txt`.
+
+- One text for both servers. `{emoji}` becomes the active server's emoji.
+- `@name` becomes a mention, with the same rules as in event titles (see Hosts).
+- More than one line is permitted. Maximum 500 characters (the panel checks this),
+  so that message 3 always fits.
+- Empty lines at the start and the end are removed. An empty footer = no footer
+  and no empty lines after Sunday.
+- A changed footer changes message 3, so the next run edits it (no ping).
+
+Default, if `data/footer.txt` does not exist:
 
 ```
-<emoji> **ALL TIMES IN EST** <emoji>
+{emoji} **ALL TIMES IN EST** {emoji}
 
 **Please message @Contact if there are any questions or changes. Thank you!**
 ```
 
-The contact line shows only if `CONTACT_HOST` is set. It must be a name in the host
-list (the panel checks this). Its mention does not notify.
+The second line shows only if `CONTACT_HOST` (the setting of older versions) is set.
+The panel shows this default in the text box, and the first save writes `data/footer.txt`.
 
 ### Hosts
 
@@ -137,7 +148,7 @@ Mentions never notify anyone on an edit or a repost.
 | `TEST_SCHEDULE_EMOJI`, `REAL_SCHEDULE_EMOJI` | Emoji around "ALL TIMES IN EST", for example `<:tnio:123>` |
 | `TEST_PING_EVERYONE`, `REAL_PING_EVERYONE` | `true` / `false` (default `false`) |
 | `GOOGLE_CALENDAR_ID` | Calendar to read (default `primary`) |
-| `CONTACT_HOST` | Host-list name for the footer contact line (empty = no line) |
+| `CONTACT_HOST` | Older versions only: the contact name in the default footer. The panel no longer writes it. |
 | `POST_DAY`, `POST_TIME` | Day (`monday`…`sunday`) and time (`HH:MM`, Eastern) of the weekly post (default `sunday`, `21:00`) |
 
 Values in `.env` win over the process environment, so a running panel always
@@ -173,8 +184,8 @@ Layout: a status band at the top, then the preview (left) and the settings in
 | --- | --- |
 | Status band | One sentence: "The bot is running." (green edge), "The bot is paused." (amber), or "The last run failed." (crimson), with the last run and the error in plain words. The next weekly post time. Automatic run switch (Task Scheduler task: 5 minutes + sign-in; stays on after a restart). **Sync now** (on `real`, asks for confirmation first). A banner and a button when Google sign-in is necessary. Refreshes every 30 s. |
 | Preview | The 3 messages of each active week, drawn like Discord (bold, bullets, mentions as blue names, custom emoji). |
-| Posting tab | Weekly post day and time. Test / Real switch. Channel ID, emoji, and @everyone for each server. |
-| Hosts tab | Table to add, change, and remove extra host names (name: no commas, unique; ID: 15–20 digits). Contact person: a list of the host names, or no contact line. |
+| Posting tab | Weekly post day and time. Test / Real switch. Channel ID, emoji, and @everyone for each server. Footer text with a character count. Unsaved changes stay in the fields during the 30-second refresh. |
+| Hosts tab | Table to add, change, and remove extra host names (name: no commas, unique; ID: 15–20 digits). |
 | Connections tab | Bot token (never shown; typing a new one replaces it). Calendar ID. Google sign-in. |
 | Update tab | `git pull --ff-only`, then `pip install -r requirements.txt`. Then the friend restarts the panel. |
 

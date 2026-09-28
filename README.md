@@ -25,7 +25,8 @@ In the control panel:
 
 1. **Connections** tab: paste the Discord bot token and the Google Calendar ID. Click **Save connections**, then **Sign in to Google** with the account that can see the calendar.
 2. **Posting** tab: type the test channel ID. Check the weekly post day and time (default Sunday 9:00 PM Eastern). Click **Save posting settings**.
-3. **Hosts** tab: choose the contact person. Host names in event titles (`@name`) work by themselves.
+3. **Posting** tab → **Footer**: write the text for the end of the schedule, for example
+   `**Please message @yourname if there are any questions. Thank you!**`. Click **Save posting settings**.
 4. Look at the **Preview**. If it is correct, click **Sync now**.
 5. Turn on the **Automatic run** switch at the top. The bot now runs every 5 minutes and after each Windows sign-in, also after a restart and when the panel is closed. Turn the switch off to stop it.
 6. When the test works, choose **Real server** in the **Posting** tab.
@@ -67,6 +68,18 @@ The panel's **Hosts** list (local file `data/hosts.csv`) is optional: use it
 for a name that the bot cannot find. A `Host: Name1, Name2` line in the event
 description also works.
 
+## Footer
+
+The footer is the text at the end of the last message. Change it in the
+**Posting** tab. It can have more than one line (maximum 500 characters).
+
+- `{emoji}` becomes the emoji of the active server. Thus one text works on both servers.
+- `@name` becomes a blue mention, the same as in event titles.
+- `**text**` is bold, the same as in Discord.
+
+After you save, the bot edits the posted schedule at the next run. It posts no
+new message and sends no ping.
+
 ## Command line (optional)
 
 ```powershell
@@ -87,6 +100,7 @@ Git ignores these files. They stay on the bot PC only. Never commit them.
 | `credentials.json` | Google OAuth client, downloaded from Google Cloud |
 | `token.json` | Made on the first Google sign-in |
 | `data/hosts.csv` | Host list |
+| `data/footer.txt` | Footer text (made when you save it in the panel) |
 | `status.json`, `bot.log` | Last run result, and the log |
 
 ## Development

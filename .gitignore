@@ -13,6 +13,7 @@ dist/
 
 # Local data (the control panel edits these)
 data/hosts.csv
+data/footer.txt
 status.json
 sync.lock
 

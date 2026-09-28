@@ -5,7 +5,7 @@ this file.
 """
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import time
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -23,6 +23,7 @@ LOG_FILE = BASE_DIR / "bot.log"
 STATUS_FILE = BASE_DIR / "status.json"
 LOCK_FILE = BASE_DIR / "sync.lock"
 HOSTS_FILE = BASE_DIR / "data" / "hosts.csv"
+FOOTER_FILE = BASE_DIR / "data" / "footer.txt"
 
 # Read-only access. The app never changes the calendar.
 GOOGLE_SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
@@ -34,6 +35,11 @@ SERVERS = ("test", "real")
 DAY_NAMES = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
 DEFAULT_POST_DAY = 6  # Sunday
 DEFAULT_POST_TIME = time(21)  # 9:00 PM Eastern
+
+# End of message 3. "{emoji}" = the active server's emoji; "@name" = a mention.
+DEFAULT_FOOTER = "{emoji} **ALL TIMES IN EST** {emoji}"
+CONTACT_LINE = "**Please message @{name} if there are any questions or changes. Thank you!**"
+MAX_FOOTER_LENGTH = 500
 
 
 @dataclass(frozen=True)
@@ -50,7 +56,7 @@ class Settings:
     test: ServerSettings
     real: ServerSettings
     google_calendar_id: str
-    contact_host: str = ""  # host-list name for the footer line
+    footer: str = DEFAULT_FOOTER  # text at the end of message 3
     post_day: int = DEFAULT_POST_DAY  # weekday (Monday = 0) when the next week is posted
     post_time: time = DEFAULT_POST_TIME  # Eastern
 
@@ -68,7 +74,7 @@ class Settings:
             test=_server(env, "TEST"),
             real=_server(env, "REAL"),
             google_calendar_id=(env.get("GOOGLE_CALENDAR_ID") or "").strip() or "primary",
-            contact_host=(env.get("CONTACT_HOST") or "").strip(),
+            footer=default_footer(env.get("CONTACT_HOST")),
             post_day=parse_day(env.get("POST_DAY")),
             post_time=parse_time(env.get("POST_TIME")),
         )
@@ -88,12 +94,37 @@ def parse_time(value: str | None) -> time:
         return DEFAULT_POST_TIME
 
 
+def default_footer(contact: str | None = None) -> str:
+    """The footer until it is changed in the panel.
+
+    Older versions had a contact setting (``CONTACT_HOST``). Its line stays in the footer.
+    """
+    contact = (contact or "").strip()
+    return f"{DEFAULT_FOOTER}\n\n{CONTACT_LINE.format(name=contact)}" if contact else DEFAULT_FOOTER
+
+
 def load_settings() -> Settings:
     """Read the settings. Values in ``.env`` win over the process environment."""
     from dotenv import dotenv_values
 
     values = dotenv_values(ENV_FILE) if ENV_FILE.exists() else {}
-    return Settings.from_env({**os.environ, **{k: v for k, v in values.items() if v is not None}})
+    settings = Settings.from_env(
+        {**os.environ, **{k: v for k, v in values.items() if v is not None}}
+    )
+    if FOOTER_FILE.exists():
+        settings = replace(settings, footer=FOOTER_FILE.read_text(encoding="utf-8-sig"))
+    return settings
+
+
+def clean_footer(text: str) -> str:
+    """Use ``\\n`` line breaks, and remove the empty lines at the start and the end."""
+    lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    return "\n".join(line.rstrip() for line in lines).strip("\n")
+
+
+def write_footer(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(clean_footer(text), encoding="utf-8", newline="\n")
 
 
 def update_env_file(path: Path, updates: dict[str, str]) -> None:

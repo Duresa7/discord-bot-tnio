@@ -8,7 +8,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 
-from tnio_bot.config import DEFAULT_POST_DAY, DEFAULT_POST_TIME, EASTERN
+from tnio_bot.config import DEFAULT_FOOTER, DEFAULT_POST_DAY, DEFAULT_POST_TIME, EASTERN
 from tnio_bot.hosts import host_text, mention_title_names, title_names
 
 log = logging.getLogger(__name__)
@@ -155,15 +155,10 @@ def header_lines(start: datetime, emoji: str) -> list[str]:
     ]
 
 
-def footer_lines(emoji: str, contact: str, hosts: dict[str, int]) -> list[str]:
-    lines = [time_zone_line(emoji)]
-    if contact:
-        lines += [
-            "",
-            f"**Please message {host_text(contact, hosts)} if there are any questions "
-            "or changes. Thank you!**",
-        ]
-    return lines
+def footer_lines(footer: str, emoji: str, hosts: dict[str, int]) -> list[str]:
+    """The footer text, with the server's emoji for ``{emoji}`` and mentions for ``@name``."""
+    text = footer.replace("{emoji}", emoji).strip()
+    return [mention_title_names(line, hosts).strip() for line in text.splitlines()]
 
 
 def event_line(event: Event, hosts: dict[str, int], with_hosts: bool = True) -> str:
@@ -184,7 +179,7 @@ def build_week_messages(
     hosts: dict[str, int],
     emoji: str = "",
     ping_everyone: bool = False,
-    contact: str = "",
+    footer: str = DEFAULT_FOOTER,
 ) -> WeekMessages:
     end = next_week_start(start)
     days = [start.date() + timedelta(days=i) for i in range(7)]
@@ -202,7 +197,8 @@ def build_week_messages(
         group_days = [days[offset] for offset in group]
         markers.append(week_title(start) if index == 0 else day_heading(group_days[0]))
         prefix = [*ping, *header_lines(start, emoji), ""] if index == 0 else ping
-        suffix = [*DAY_GAP, *footer_lines(emoji, contact, hosts)] if index == last else []
+        end_lines = footer_lines(footer, emoji, hosts) if index == last else []
+        suffix = [*DAY_GAP, *end_lines] if end_lines else []
         contents.append(_render(prefix, group_days, by_day, hosts, suffix))
     return WeekMessages(tuple(markers), tuple(contents))
 

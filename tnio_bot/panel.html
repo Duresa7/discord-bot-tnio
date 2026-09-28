@@ -20,7 +20,7 @@
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--page); color: var(--text); font: 16px/1.5 var(--body); }
   h1, h2, h3 { font-family: var(--display); font-weight: 600; margin: 0; letter-spacing: .01em; }
-  button, input, select { font: inherit; color: inherit; }
+  button, input, select, textarea { font: inherit; color: inherit; }
   :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
   code { background: var(--raised); padding: 0 4px; border-radius: 4px; font-size: .92em; }
   [hidden] { display: none !important; }
@@ -73,9 +73,12 @@
   .link-btn:hover { color: var(--text); }
   label { display: block; font-weight: 600; margin: 16px 0 6px; }
   .hint { color: var(--muted); font-size: 14px; margin: 6px 0 0; }
-  input[type=text], input[type=password], input[type=time], select {
+  input[type=text], input[type=password], input[type=time], select, textarea {
     width: 100%; padding: 9px 11px; border-radius: 6px; border: 1px solid var(--line); background: var(--page); }
-  input:focus, select:focus { border-color: var(--amber); outline: none; }
+  textarea { resize: vertical; min-height: 120px; line-height: 1.45; }
+  input:focus, select:focus, textarea:focus { border-color: var(--amber); outline: none; }
+  .count-line { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .count-line .over { color: var(--crimson-hover); font-weight: 600; }
   .check { display: flex; gap: 10px; align-items: center; font-weight: 400; margin-top: 14px; }
   .check input { width: 18px; height: 18px; accent-color: var(--crimson); }
   .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
@@ -237,6 +240,18 @@
         </div>
         <p class="hint">Channel ID: in Discord, right-click the channel and click “Copy Channel ID” (Developer Mode must be on).
           Emoji code: type <code>\:name:</code> in Discord and copy the result.</p>
+
+        <hr>
+        <h3>Footer</h3>
+        <p class="hint">The text at the end of the last message. It can have more than one line.</p>
+        <label for="footer">Footer text</label>
+        <textarea id="footer" rows="5" spellcheck="true"></textarea>
+        <div class="count-line">
+          <p class="hint"><code>{emoji}</code> = the server's emoji.
+            <code>@name</code> = a blue mention, the same as in event titles.
+            <code>**text**</code> = bold.</p>
+          <p class="hint" id="footer-count"></p>
+        </div>
         <div class="row" style="margin-top: 18px"><button id="posting-save" class="btn">Save posting settings</button></div>
       </div>
 
@@ -254,13 +269,6 @@
           <button id="host-add" class="btn quiet">Add a host</button>
           <button id="hosts-save" class="btn">Save hosts</button>
         </div>
-
-        <hr>
-        <h3>Contact person</h3>
-        <p class="hint">Shown at the end of the schedule: “Please message @name if there are any questions or changes.”</p>
-        <label for="contact">Contact</label>
-        <select id="contact"></select>
-        <div class="row" style="margin-top: 14px"><button id="contact-save" class="btn">Save contact</button></div>
       </div>
 
       <!-- Connections -->
@@ -363,7 +371,6 @@ async function loadState() {
   renderStatus();
   renderPosting();
   if (!focused($("#hosts-body"))) { hosts = state.hosts.map((row) => ({ ...row })); renderHosts(); }
-  renderContact();
   $("#token").placeholder = state.token_set ? "A token is saved" : "No token yet: paste the bot token";
   if (!focused($("#calendar"))) $("#calendar").value = state.calendar_id;
 }
@@ -410,33 +417,37 @@ function renderStatus() {
   $("#server-badge").textContent = real ? "Real server" : "Test server";
 }
 
+// True while the Posting tab has changes that are not saved. The 30-second refresh keeps them.
+let postingEdited = false;
+
 function renderPosting() {
-  if (!focused($("#post-day"))) $("#post-day").value = state.post_day;
-  if (!focused($("#post-time"))) $("#post-time").value = state.post_time;
   for (const button of $$("[data-server]")) {
     const selected = button.dataset.server === state.server;
     button.setAttribute("aria-pressed", String(selected));
     button.classList.toggle("real", button.dataset.server === "real");
   }
   for (const name of ["test", "real"]) {
+    document.querySelector(`[data-fields="${name}"]`).classList.toggle("active", name === state.server);
+  }
+  if (postingEdited) return;
+  $("#post-day").value = state.post_day;
+  $("#post-time").value = state.post_time;
+  for (const name of ["test", "real"]) {
     const box = document.querySelector(`[data-fields="${name}"]`);
-    box.classList.toggle("active", name === state.server);
-    if (focused(box)) continue;
     const values = state.servers[name];
     box.querySelector('[data-key="channel_id"]').value = values.channel_id;
     box.querySelector('[data-key="emoji"]').value = values.emoji;
     box.querySelector('[data-key="ping_everyone"]').checked = values.ping_everyone;
   }
+  $("#footer").value = state.footer;
+  renderFooterCount();
 }
 
-function renderContact() {
-  const select = $("#contact");
-  if (focused(select)) return;
-  const names = state.hosts.map((row) => row.name);
-  if (state.contact_host && !names.includes(state.contact_host)) names.push(state.contact_host);
-  select.innerHTML = '<option value="">No contact line</option>'
-    + names.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
-  select.value = state.contact_host;
+function renderFooterCount() {
+  const length = $("#footer").value.trim().length;
+  const count = $("#footer-count");
+  count.textContent = `${length} of ${state.max_footer_length} characters`;
+  count.classList.toggle("over", length > state.max_footer_length);
 }
 
 // ---- Preview (drawn like Discord) ----
@@ -514,12 +525,6 @@ $("#hosts-save").onclick = (event) => busy(event.target, async () => {
   await loadState();
   loadPreview();
 });
-$("#contact-save").onclick = (event) => busy(event.target, async () => {
-  await api("/api/settings", { contact_host: $("#contact").value });
-  toast("Contact saved.");
-  await loadState();
-  loadPreview();
-});
 
 // ---- Posting ----
 
@@ -535,8 +540,14 @@ $$("[data-server]").forEach((button) => {
   });
 });
 
+$("#posting").addEventListener("input", () => (postingEdited = true));
+$("#posting").addEventListener("change", () => (postingEdited = true));
+$("#footer").addEventListener("input", renderFooterCount);
+
 $("#posting-save").onclick = (event) => busy(event.target, async () => {
-  const body = { post_day: $("#post-day").value, post_time: $("#post-time").value };
+  const body = {
+    post_day: $("#post-day").value, post_time: $("#post-time").value, footer: $("#footer").value,
+  };
   for (const name of ["test", "real"]) {
     const box = document.querySelector(`[data-fields="${name}"]`);
     body[name] = {
@@ -546,6 +557,7 @@ $("#posting-save").onclick = (event) => busy(event.target, async () => {
     };
   }
   await api("/api/settings", body);
+  postingEdited = false;
   await loadState();
   toast(`Posting settings saved. Next weekly post: ${state.next_post}.`);
   loadPreview();

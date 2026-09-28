@@ -1,4 +1,5 @@
-from tnio_bot.config import Settings, update_env_file
+from tnio_bot import config
+from tnio_bot.config import DEFAULT_FOOTER, Settings, update_env_file
 
 
 def test_defaults_when_env_is_empty() -> None:
@@ -9,6 +10,19 @@ def test_defaults_when_env_is_empty() -> None:
     assert settings.active.channel_id is None
     assert settings.active.ping_everyone is False
     assert settings.active.emoji == ""
+    assert settings.footer == DEFAULT_FOOTER
+
+
+def test_footer_file_wins_over_the_old_contact_setting(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(config, "ENV_FILE", tmp_path / ".env")
+    monkeypatch.setattr(config, "FOOTER_FILE", tmp_path / "footer.txt")
+    monkeypatch.delenv("CONTACT_HOST", raising=False)
+    config.ENV_FILE.write_text("CONTACT_HOST=Rakkos\n", encoding="utf-8")
+    assert config.load_settings().footer.endswith(
+        "**Please message @Rakkos if there are any questions or changes. Thank you!**"
+    )
+    config.write_footer(config.FOOTER_FILE, "Thank you!")
+    assert config.load_settings().footer == "Thank you!"
 
 
 def test_active_server_settings() -> None:

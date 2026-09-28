@@ -68,7 +68,7 @@ def build_weeks(
                     hosts,
                     server.emoji,
                     server.ping_everyone,
-                    settings.contact_host,
+                    settings.footer,
                 ),
             )
         )

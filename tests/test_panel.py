@@ -10,6 +10,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "ENV_FILE", tmp_path / ".env")
     monkeypatch.setattr(config, "ENV_EXAMPLE_FILE", tmp_path / ".env.example")
     monkeypatch.setattr(config, "HOSTS_FILE", tmp_path / "data" / "hosts.csv")
+    monkeypatch.setattr(config, "FOOTER_FILE", tmp_path / "data" / "footer.txt")
     monkeypatch.setattr(config, "STATUS_FILE", tmp_path / "status.json")
     monkeypatch.setattr(panel, "sign_in_problem", lambda: None)
     monkeypatch.setattr(task, "is_on", lambda: False)
@@ -81,16 +82,29 @@ def test_bad_channel_id_is_refused(client) -> None:
     assert "digits" in response.json["error"]
 
 
-def test_contact_must_be_in_the_host_list(client) -> None:
-    body = {"contact_host": "Rakkos"}
+def test_footer_starts_with_the_old_contact_line(client) -> None:
+    config.ENV_FILE.write_text("CONTACT_HOST=Rakkos\n", encoding="utf-8")
+    state = client.get("/api/state", base_url=BASE_URL).json
+    assert state["footer"] == config.default_footer("Rakkos")
+    assert "@Rakkos" in state["footer"]
+
+
+def test_save_footer(client) -> None:
+    body = {"footer": "\r\n{emoji} Hello @Rakkos  \r\n\r\nThank you!\r\n"}
+    assert client.post("/api/settings", base_url=BASE_URL, json=body).status_code == 200
+    assert config.FOOTER_FILE.read_bytes() == b"{emoji} Hello @Rakkos\n\nThank you!"
+    assert client.get("/api/state", base_url=BASE_URL).json["footer"] == (
+        "{emoji} Hello @Rakkos\n\nThank you!"
+    )
+
+
+def test_too_long_footer_is_refused(client) -> None:
+    body = {"footer": "x" * (config.MAX_FOOTER_LENGTH + 1), "post_day": "monday"}
     response = client.post("/api/settings", base_url=BASE_URL, json=body)
     assert response.status_code == 400
-    assert "not in the host list" in response.json["error"]
-
-    hosts = [{"name": "Rakkos", "discord_id": "123456789012345678"}]
-    client.post("/api/hosts", base_url=BASE_URL, json={"hosts": hosts})
-    assert client.post("/api/settings", base_url=BASE_URL, json=body).status_code == 200
-    assert config.load_settings().contact_host == "Rakkos"
+    assert "too long" in response.json["error"]
+    assert not config.FOOTER_FILE.exists()
+    assert config.load_settings().post_day == config.DEFAULT_POST_DAY  # nothing saved
 
 
 def test_save_post_day_and_time(client) -> None:
